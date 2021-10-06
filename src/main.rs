@@ -7,8 +7,9 @@ mod start;
 
 #[no_mangle]
 pub unsafe fn kernel_main() {
+    let mut x = 0;
     loop {
-
+        x += 1;
     }
 }
 
