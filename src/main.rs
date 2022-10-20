@@ -2,23 +2,23 @@
 #![no_std]
 
 mod start;
-mod bcm2xxx_pl011_uart;
-mod bcm2xxx_gpio;
 
+mod drivers;
+use drivers::bcm2xxx_gpio::*;
 
 const PBASE: u64 = 0x3F000000;
-const AUX_REGS_ADDR: u64 = (PBASE + 0x00215000);
+const AUX_REGS_ADDR: u64 = PBASE + 0x00215000;
 
 #[no_mangle]
 pub unsafe fn kernel_main() {
-    let auxregs = AUX_REGS_ADDR as *mut AuxRegs;
     
-    let t = (*auxregs).mu_io;
-    
-    while ((*auxregs).mu_lsr & 0x20) == 0 {
-        
+    let s = "hello world\n";
+    for c in s.chars() {
+        unsafe {
+            core::ptr::write_volatile(0x3F20_1000 as *mut u8, c as u8);
+        }
     }
-    (*auxregs).mu_io = 0x64;
+
     
     loop {
 

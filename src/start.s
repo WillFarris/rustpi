@@ -3,24 +3,54 @@
 .globl _start
 .type _start, function
 _start:
-    mrs x5, mpidr_el1
-    and x5, x5, #0x3
-    cbnz x5, slave_core_sleep
+    mrs     x0, s3_1_c15_c2_1
+    orr     x0, x0, #0x40
+    msr     s3_1_c15_c2_1, x0
 
-    ldr x4, =__EL1_stack_core0
-    msr sp_el1, x4
+    mrs     x5, mpidr_el1
+    and     x5, x5, #0x3
 
-    ldr x0, =0b00110000110100000000100000000000
-    msr sctlr_el1, x0  
+    cbnz    x5, hang
 
-    //ldr x0, =HCR_VALUE
-    //msr hcr_el2, x0
+    cmp     x5, #0
+    beq     core0_stack
+    cmp     x5, #1
+    beq     core1_stack
+    cmp     x5, #2
+    beq     core2_stack
+    cmp     x5, #3
+    beq     core3_stack
 
-    //ldr x0, =SCR_VALUE
-    //msr scr_el3, x0
+hang:
+    wfe
+    b       hang
 
-    //ldr x0, =SPSR_EL3_TO_EL1h
-    //msr spsr_el3, x0
+core0_stack:
+    adr     x2, __EL0_stack_core0
+    adr     x3, __EL1_stack_core0
+    adr     x4, __EL2_stack_core0
+    b       set_stack
+core1_stack:
+    adr     x2, __EL0_stack_core1
+    adr     x3, __EL1_stack_core1
+    adr     x4, __EL2_stack_core1
+    b       set_stack
+core2_stack:
+    adr     x2, __EL0_stack_core2
+    adr     x3, __EL1_stack_core2
+    adr     x4, __EL2_stack_core2
+    b       set_stack
+core3_stack:
+    adr     x2, __EL0_stack_core3
+    adr     x3, __EL1_stack_core3
+    adr     x4, __EL2_stack_core3
+    b       set_stack
+
+set_stack:
+    mrs     x0, CurrentEL
+    msr     sp_el0, x2
+    msr     sp_el1, x3
+    msr     sp_el2, x4
 
     adr x0, el1_entry
     msr elr_el3, x0
@@ -41,8 +71,7 @@ el1_entry:
     sub     x1, x1, x0
     bl      memzero
     bl      kernel_main
-hang:
-    b hang
+    b       hang
 
 .balign 4
 slave_core_sleep:

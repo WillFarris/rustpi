@@ -1,10 +1,14 @@
 BUILDTYPE ?= debug
 
-RUST_FLAGS = --target aarch64-unknown-none 
+RUST_FLAGS = --target aarch64-unknown-none
 ifeq ($(BUILDTYPE), rlease)
     RUST_FLAGS +=" --release"
 endif
-QEMU_FLAGS = -s -M raspi3b -cpu cortex-a53 -serial null -serial stdio -S
+QEMU_FLAGS = -s -M raspi3b -cpu cortex-a53 -serial stdio -serial null -vnc :1 -S
+
+GDB.Linux.x86_64=aarch64-linux-gnu-gdb
+GDB.Linux.aarch64=gdb
+GDB += $(GDB.$(shell uname -s).$(shell uname -m))
 
 all: kernel.img
 
@@ -27,4 +31,4 @@ qemus: kernel.elf
 	qemu-system-aarch64 $(QEMU_FLAGS) -kernel target/aarch64-unknown-none/$(BUILDTYPE)/kernel
 
 gdb:
-	gdb -q
+	$(GDB) -q

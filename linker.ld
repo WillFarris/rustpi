@@ -1,21 +1,33 @@
+__rpi_phys_binary_load_addr = 0x80000;
+
+
 SECTIONS
 {
-    . = 0x80000;
-
-    __stack_high = .;
-	
-    .text : { *(.text._start) *(.text) *(.text.*) }
-	.rodata : { *(.rodata) }
-	.data : { 
-        *(.data)
+    /**************************************************
+     *      Kernel Data                               *
+     **************************************************/
+    . = __rpi_phys_binary_load_addr;
+    .text : {
+        KEEP(*(.text._start))
+        *(.text*)
     }
+	.rodata : {
+        *(.rodata*)
+    }
+	.data : { 
+        *(.data*)
+    } : segment_data
 	. = ALIGN(16);
 	bss_begin = .;
 	.bss : {
 		 *(.bss*)
-	} 
+	}
 	bss_end = .;
-	.stack_core0 : {
+
+    /**************************************************
+     *      Kernel Stack                              *
+     **************************************************/
+    .stack_core0 : {
         . = ALIGN(16);
         __stack_start_core0__ = .;
         . = . + 1024;				/* 1KB EL0 stack */
@@ -62,4 +74,9 @@ SECTIONS
 
     __kernel_img_end = .;
 
+    
+
+    /DISCARD/ : {
+        *(*.debug*)
+    }
 }

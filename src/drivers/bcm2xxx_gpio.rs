@@ -10,6 +10,10 @@ use tock_registers::{
     registers::ReadWrite,
 };
 
+use crate::start;
+
+use super::mmio_deref_wrapper::MMIODerefWrapper;
+
 //--------------------------------------------------------------------------------------------------
 // Private Definitions
 //--------------------------------------------------------------------------------------------------
@@ -98,5 +102,52 @@ register_structs! {
         (0x9C => _reserved3),
         (0xE4 => GPIO_PUP_PDN_CNTRL_REG0: ReadWrite<u32, GPIO_PUP_PDN_CNTRL_REG0::Register>),
         (0xE8 => @END),
+    }
+}
+
+type Registers = MMIODerefWrapper<RegisterBlock>;
+
+struct GPIOInner {
+    registers: Registers,
+}
+
+impl GPIOInner {
+    pub const unsafe fn new(mmio_start_addr: usize) -> Self {
+        Self {
+            registers: Registers::new(mmio_start_addr)
+        }
+    }
+
+    pub fn map_pl011_uart(&mut self) {
+        self.registers.GPFSEL1.modify(GPFSEL1::FSEL15::AltFunc0 + GPFSEL1::FSEL14::AltFunc0);
+
+        self.registers.GPPUD.write(GPPUD::PUD::Off);
+        for _ in 0..2000 {
+            cortex_a::asm::nop();
+        }
+
+        self.registers.GPPUDCLK0.write(GPPUDCLK0::PUDCLK15::AssertClock + GPPUDCLK0::PUDCLK14::AssertClock);
+        for _ in 0..2000 {
+            cortex_a::asm::nop();
+        }
+
+        self.registers.GPPUD.write(GPPUD::PUD::Off);
+        self.registers.GPPUDCLK0.set(0);
+    }
+}
+
+pub struct GPIO {
+    inner: GPIOInner,
+}
+
+impl GPIO {
+    pub const unsafe fn new(mmio_start_addr: usize) -> Self {
+        Self {
+            inner: GPIOInner::new(mmio_start_addr),
+        }
+    }
+
+    pub fn map_pl011_uart(&mut self) {
+        self.inner.map_pl011_uart();
     }
 }
