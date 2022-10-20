@@ -5,14 +5,10 @@
 _start:
     mrs x5, mpidr_el1
     and x5, x5, #0x3
+    cbnz x5, slave_core_sleep
 
-    mov x4, #0x20000
-    mul x3, x4, x5
-    add x4, x3, x4
-    
+    ldr x4, =__EL1_stack_core0
     msr sp_el1, x4
-    sub x4, x4, #0x10000
-    msr sp_el0, x4
 
     ldr x0, =0b00110000110100000000100000000000
     msr sctlr_el1, x0  
@@ -45,7 +41,8 @@ el1_entry:
     sub     x1, x1, x0
     bl      memzero
     bl      kernel_main
-    b       hang
+hang:
+    b hang
 
 .balign 4
 slave_core_sleep:

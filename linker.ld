@@ -4,7 +4,7 @@ SECTIONS
 
     __stack_high = .;
 	
-    .text : { *(.text._start) *(.text) }
+    .text : { *(.text._start) *(.text) *(.text.*) }
 	.rodata : { *(.rodata) }
 	.data : { 
         *(.data)
