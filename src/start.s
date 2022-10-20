@@ -32,51 +32,52 @@ _start:
     eret
 
 el1_entry:
-    //bl irq_init_vectors
+    //bl    irq_init_vectors
     //bl irq_enable
     //mov x0, #0x1
     //bl write_pmcr_el0
 
-    cmp x5, #0
-    bne slave_core_sleep
+    cmp     x5, #0
+    bne     slave_core_sleep
 
-    adr x0, bss_begin
-    adr x1, bss_end
-    sub x1, x1, x0
-    bl memzero
-    bl kernel_main
+    adr     x0, bss_begin
+    adr     x1, bss_end
+    sub     x1, x1, x0
+    bl      memzero
+    bl      kernel_main
+    b       hang
 
 .balign 4
 slave_core_sleep:
     wfe
-	mov	x2, 204
-	movk x2, 0x4000, lsl 16 //0x400000CC
-	mrs x0, mpidr_el1
-	ubfiz x0, x0, 4, 4
-	ldr	w1, [x0, x2]
-	cbz w1, slave_core_sleep
-    str w1, [x0, x2]
+	mov	    x2, 204
+	movk    x2, 0x4000, lsl 16 //0x400000CC
+	mrs     x0, mpidr_el1
+	ubfiz   x0, x0, 4, 4
+	ldr	    w1, [x0, x2]
+	cbz     w1, slave_core_sleep
+    str     w1, [x0, x2]
     
-    dmb sy // data memory buffer
-    blr x1 //branch and link to register
-    dmb sy
-    b slave_core_sleep
+    dmb     sy // data memory buffer
+    blr     x1 //branch and link to register
+    dmb     sy
+    b       slave_core_sleep
     ret
 
 .globl core_execute
 core_execute:
-    dmb sy
-    ubfiz x0, x0, 2, 8
-    mov x2, 140
-    movk x2, 0x4000, lsl 16
-    str w1, [x2, x0, lsl 2]
+    dmb     sy
+    ubfiz   x0, x0, 2, 8
+    mov     x2, 140
+    movk    x2, 0x4000, lsl 16
+    str     w1, [x2, x0, lsl 2]
     sev
-    dmb sy
+    dmb     sy
     ret
 
 .globl memzero
 memzero:
-    str xzr, [x0], #8
-    subs x1, x1, #8
-    bgt memzero
+    str     xzr, [x0], #8
+    subs    x1, x1, #8
+    bgt     memzero
     ret

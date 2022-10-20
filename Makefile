@@ -1,8 +1,6 @@
-#include gccpath.mk
-
 BUILDTYPE ?= debug
 
-RUST_FLAGS = --target aarch64-unknown-none
+RUST_FLAGS = --target aarch64-unknown-none 
 ifeq ($(BUILDTYPE), rlease)
     RUST_FLAGS +=" --release"
 endif
@@ -17,8 +15,8 @@ clean:
 kernel.img: kernel.elf
 
 kernel.elf:
-	cargo rustc $(RUST_FLAGS)
-	$(GCCPATH)objdump -D target/aarch64-unknown-none/$(BUILDTYPE)/kernel > kernel.elf.dump
+	RUSTFLAGS="-C link-arg=linker.ld" cargo rustc $(RUST_FLAGS)
+	aarch64-linux-gnu-objdump -D target/aarch64-unknown-none/$(BUILDTYPE)/kernel > kernel.elf.dump
 
 dump: kernel.elf
 

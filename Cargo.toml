@@ -10,4 +10,4 @@ target = "aarch64-unknown-none"
 
 [dependencies]
 cortex-a = "*"
-tock-registers ="*"
+tock-registers = "*"
