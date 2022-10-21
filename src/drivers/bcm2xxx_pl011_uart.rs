@@ -159,20 +159,56 @@ register_structs! {
 
 type Registers = MMIODerefWrapper<RegisterBlock>;
 
-struct PL011UartInner {
+pub struct PL011Uart {
     registers: Registers,
 }
 
-impl PL011UartInner {
+impl PL011Uart {
     pub const unsafe fn new(mmio_start_addr: usize) -> Self {
         Self {
             registers: Registers::new(mmio_start_addr),
         }
     }
+    
+    pub fn init(&self) {
+        self.registers.CR.set(0);
+        
+        self.registers.IBRD.write(IBRD::BAUD_DIVINT.val(3));
+        self.registers.FBRD.write(FBRD::BAUD_DIVFRAC.val(16));
+        self.registers
+            .LCR_H
+            .write(LCR_H::WLEN::EightBit + LCR_H::FEN::FifosEnabled);
+
+        
+        self.registers
+            .CR
+            .write(CR::UARTEN::Enabled + CR::TXE::Enabled + CR::RXE::Enabled);
+    }
+    
+    pub fn write_char(&self, c: char) {
+        while self.registers.FR.matches_all(FR::TXFF::SET) {
+            cortex_a::asm::nop();
+        }
+
+        // Write the character to the buffer.
+        self.registers.DR.set(c as u32);
+
+    }
+    
+    pub fn read_char(&self) -> char {
+        while self.registers.FR.matches_all(FR::RXFE::SET) {
+            cortex_a::asm::nop();
+        }
+        
+        char::from_u32(self.registers.DR.get()).unwrap()
+    }
+    
+    pub fn write_str(&self, string: &str) {
+         for c in string.chars() {
+             self.write_char(c);
+         }
+     }
 
     
 }
 
-pub struct PL011Uart {
-    inner: PL011UartInner,
-}

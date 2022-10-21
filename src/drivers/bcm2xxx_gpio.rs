@@ -107,11 +107,11 @@ register_structs! {
 
 type Registers = MMIODerefWrapper<RegisterBlock>;
 
-struct GPIOInner {
+pub struct GPIO {
     registers: Registers,
 }
 
-impl GPIOInner {
+impl GPIO {
     pub const unsafe fn new(mmio_start_addr: usize) -> Self {
         Self {
             registers: Registers::new(mmio_start_addr)
@@ -133,21 +133,5 @@ impl GPIOInner {
 
         self.registers.GPPUD.write(GPPUD::PUD::Off);
         self.registers.GPPUDCLK0.set(0);
-    }
-}
-
-pub struct GPIO {
-    inner: GPIOInner,
-}
-
-impl GPIO {
-    pub const unsafe fn new(mmio_start_addr: usize) -> Self {
-        Self {
-            inner: GPIOInner::new(mmio_start_addr),
-        }
-    }
-
-    pub fn map_pl011_uart(&mut self) {
-        self.inner.map_pl011_uart();
     }
 }
