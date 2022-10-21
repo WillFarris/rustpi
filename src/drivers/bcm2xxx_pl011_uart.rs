@@ -17,6 +17,8 @@ use tock_registers::{
     registers::{ReadOnly, ReadWrite, WriteOnly},
 };
 
+use super::mmio_deref_wrapper::MMIODerefWrapper;
+
 //--------------------------------------------------------------------------------------------------
 // Private Definitions
 //--------------------------------------------------------------------------------------------------
@@ -153,4 +155,24 @@ register_structs! {
         (0x44 => ICR: WriteOnly<u32, ICR::Register>),
         (0x48 => @END),
     }
+}
+
+type Registers = MMIODerefWrapper<RegisterBlock>;
+
+struct PL011UartInner {
+    registers: Registers,
+}
+
+impl PL011UartInner {
+    pub const unsafe fn new(mmio_start_addr: usize) -> Self {
+        Self {
+            registers: Registers::new(mmio_start_addr),
+        }
+    }
+
+    
+}
+
+pub struct PL011Uart {
+    inner: PL011UartInner,
 }
