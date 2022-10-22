@@ -10,9 +10,7 @@ use tock_registers::{
     registers::ReadWrite,
 };
 
-use crate::start;
-
-use super::mmio_deref_wrapper::MMIODerefWrapper;
+use super::common::MMIODerefWrapper;
 
 //--------------------------------------------------------------------------------------------------
 // Private Definitions
@@ -118,7 +116,7 @@ impl GPIO {
         }
     }
 
-    pub fn map_pl011_uart(&mut self) {
+    pub fn map_pl011_uart(&self) {
         self.registers.GPFSEL1.modify(GPFSEL1::FSEL15::AltFunc0 + GPFSEL1::FSEL14::AltFunc0);
 
         self.registers.GPPUD.write(GPPUD::PUD::Off);

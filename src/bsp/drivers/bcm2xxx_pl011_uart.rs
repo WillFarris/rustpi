@@ -10,14 +10,13 @@
 //! - <https://developer.arm.com/documentation/ddi0183/latest>
 
 
-use core::fmt;
 use tock_registers::{
     interfaces::{Readable, Writeable},
     register_bitfields, register_structs,
     registers::{ReadOnly, ReadWrite, WriteOnly},
 };
 
-use super::mmio_deref_wrapper::MMIODerefWrapper;
+use super::common::MMIODerefWrapper;
 
 //--------------------------------------------------------------------------------------------------
 // Private Definitions
@@ -186,6 +185,10 @@ impl PL011Uart {
     }
     
     pub fn write_char(&self, c: char) {
+        if c == '\r' {
+            self.write_char('\n');
+        }
+
         while self.registers.FR.matches_all(FR::TXFF::SET) {
             cortex_a::asm::nop();
         }

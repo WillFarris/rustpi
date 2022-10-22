@@ -10,8 +10,6 @@ _start:
     mrs     x5, mpidr_el1
     and     x5, x5, #0x3
 
-    cbnz    x5, hang
-
     cmp     x5, #0
     beq     core0_stack
     cmp     x5, #1
@@ -52,16 +50,19 @@ set_stack:
     msr     sp_el1, x3
     msr     sp_el2, x4
 
-    adr x0, el1_entry
-    msr elr_el3, x0
+    adr     x0, el1_entry
+    msr     elr_el3, x0
 
+    adr     x0, bss_begin
+    adr     x1, bss_end
+    sub     x1, x1, x0
     eret
 
 el1_entry:
-    //bl    irq_init_vectors
-    //bl irq_enable
-    //mov x0, #0x1
-    //bl write_pmcr_el0
+    //bl      irq_init_vectors
+    //bl      irq_enable
+    //mov     x0, #0x1
+    //bl      write_pmcr_el0
 
     cmp     x5, #0
     bne     slave_core_sleep
@@ -74,6 +75,7 @@ el1_entry:
     b       hang
 
 .balign 4
+.globl slave_core_sleep
 slave_core_sleep:
     wfe
 	mov	    x2, 204
@@ -106,4 +108,20 @@ memzero:
     str     xzr, [x0], #8
     subs    x1, x1, #8
     bgt     memzero
+    ret
+
+.globl irq_init_vectors
+irq_init_vectors:
+    adr x0, vectors
+    msr vbar_el1, x0
+    ret
+
+.globl irq_enable
+irq_enable:
+    msr daifclr, #2
+    ret
+
+.globl irq_disable
+irq_disable:
+    msr daifset, #2
     ret
