@@ -24,45 +24,35 @@ hang:
     b       hang
 
 core0_stack:
-    adr     x2, __EL0_stack_core0
-    adr     x3, __EL1_stack_core0
-    adr     x4, __EL2_stack_core0
+    adr     x1, __EL0_stack_core0
+    adr     x2, __EL1_stack_core0
+    adr     x3, __EL2_stack_core0
+    adr     x4, __EL3_stack_core0
     b       set_stack
 core1_stack:
     adr     x2, __EL0_stack_core1
-    adr     x3, __EL1_stack_core1
-    adr     x4, __EL2_stack_core1
+    adr     x2, __EL1_stack_core1
+    adr     x3, __EL2_stack_core1
+    adr     x4, __EL3_stack_core1
     b       set_stack
 core2_stack:
+    adr     x1, __EL0_stack_core2
     adr     x2, __EL0_stack_core2
     adr     x3, __EL1_stack_core2
     adr     x4, __EL2_stack_core2
     b       set_stack
 core3_stack:
+    adr     x1, __EL0_stack_core3
     adr     x2, __EL0_stack_core3
     adr     x3, __EL1_stack_core3
     adr     x4, __EL2_stack_core3
     b       set_stack
 
 set_stack:
-    mrs     x0, CurrentEL
-    msr     sp_el0, x2
-    msr     sp_el1, x3
-    msr     sp_el2, x4
-
-    adr     x0, el1_entry
-    msr     elr_el3, x0
-
-    adr     x0, bss_begin
-    adr     x1, bss_end
-    sub     x1, x1, x0
-    eret
-
-el1_entry:
-    //bl      irq_init_vectors
-    //bl      irq_enable
-    //mov     x0, #0x1
-    //bl      write_pmcr_el0
+    msr     sp_el0, x1
+    msr     sp_el1, x2
+    msr     sp_el2, x3
+    mov     sp, x4
 
     cmp     x5, #0
     bne     slave_core_sleep
@@ -71,7 +61,9 @@ el1_entry:
     adr     x1, bss_end
     sub     x1, x1, x0
     bl      memzero
-    bl      kernel_main
+
+    mrs     x0, CurrentEL
+    bl      _rust_entry
     b       hang
 
 .balign 4

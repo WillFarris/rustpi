@@ -1,3 +1,4 @@
 /target
 gccpath.mk
-kernel.elf.dump
+kernel.dump
+kernel8.img

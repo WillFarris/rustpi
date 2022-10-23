@@ -12,7 +12,7 @@ mod bsp;
 
 
 #[no_mangle]
-pub unsafe fn kernel_main() {
+pub unsafe fn kernel_main() -> ! {
     bsp::raspberrypi::GPIO_GLOBAL.map_pl011_uart();
     
     PL011_UART.init();

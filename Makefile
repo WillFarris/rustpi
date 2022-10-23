@@ -6,25 +6,22 @@ ifeq ($(BUILDTYPE), rlease)
 endif
 QEMU_FLAGS = -s -M raspi3b -cpu cortex-a53 -serial stdio -serial null -vnc :1
 
-GDB.Linux.x86_64=aarch64-linux-gnu-gdb
-GDB.Linux.aarch64=gdb
-GDB += $(GDB.$(shell uname -s).$(shell uname -m))
-
-OBJDUMP.Linux.x86_64=aarch64-linux-gnu-objdump
-OBJDUMP.Linux.aarch64=objdump
-OBJDUMP += $(OBJDUMP.$(shell uname -s).$(shell uname -m))
+CMD_PREFIX.Linux.x86_64=aarch64-linux-gnu-
+CMD_PREFIX.Linux.aarch64=
+CMD_PREFIX += $(CMD_PREFIX.$(shell uname -s).$(shell uname -m))
 
 all: kernel.img
 
 clean:
 	cargo clean
-	rm kernel.elf.dump
+	rm kernel.dump kernel8.img
 
 kernel.img: kernel.elf
+	$(CMD_PREFIX)objcopy target/aarch64-unknown-none/$(BUILDTYPE)/kernel -O binary kernel8.img
 
 kernel.elf:
 	RUSTFLAGS="-C link-arg=linker.ld" cargo rustc $(RUST_FLAGS)
-	$(OBJDUMP) -D target/aarch64-unknown-none/$(BUILDTYPE)/kernel > kernel.elf.dump
+	$(CMD_PREFIX)objdump -D target/aarch64-unknown-none/$(BUILDTYPE)/kernel > kernel.dump
 
 dump: kernel.elf
 
@@ -35,4 +32,4 @@ qemus:
 	qemu-system-aarch64 $(QEMU_FLAGS) -S -kernel target/aarch64-unknown-none/$(BUILDTYPE)/kernel
 
 gdb:
-	$(GDB) -q
+	$(CMD_PREFIX)gdb -q

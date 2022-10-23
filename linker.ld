@@ -36,6 +36,8 @@ SECTIONS
         __EL1_stack_core0 = .;
         . = . + 512;				/* 512B EL2 stack */
         __EL2_stack_core0 = .;
+        . = . + 512;				/* 512B EL3 stack */
+        __EL3_stack_core0 = .;
         __stack_end_core0__ = .;    
     }
 	.stack_core1 : {
@@ -47,6 +49,8 @@ SECTIONS
         __EL1_stack_core1 = .;
         . = . + 512;				/* 512B EL2 stack */
         __EL2_stack_core1 = .;
+        . = . + 512;				/* 512B EL3 stack */
+        __EL3_stack_core1 = .;
         __stack_end_core1__ = .;    
     }
 	.stack_core2 : {
@@ -58,6 +62,8 @@ SECTIONS
         __EL1_stack_core2 = .;
         . = . + 512;				/* 512B EL2 stack */
         __EL2_stack_core2 = .;
+        . = . + 512;				/* 512B EL3 stack */
+        __EL3_stack_core2 = .;
         __stack_end_core2__ = .;    
     }
 	.stack_core3 : {
@@ -69,6 +75,8 @@ SECTIONS
         __EL1_stack_core3 = .;
         . = . + 512;				/* 512B EL2 stack */
         __EL2_stack_core3 = .;
+        . = . + 512;				/* 512B EL3 stack */
+        __EL3_stack_core3 = .;
         __stack_end_core3__ = .;    
     }
 
