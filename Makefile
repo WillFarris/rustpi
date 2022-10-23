@@ -6,6 +6,7 @@ ifeq ($(BUILDTYPE), rlease)
 endif
 QEMU_FLAGS = -s -M raspi3b -cpu cortex-a53 -serial stdio -serial null -vnc :1
 
+CMD_PREFIX.Darwin.x86_64=aarch64-elf-
 CMD_PREFIX.Linux.x86_64=aarch64-linux-gnu-
 CMD_PREFIX.Linux.aarch64=
 CMD_PREFIX += $(CMD_PREFIX.$(shell uname -s).$(shell uname -m))

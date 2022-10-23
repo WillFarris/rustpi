@@ -30,15 +30,20 @@ register_bitfields! {
         FSEL15 OFFSET(15) NUMBITS(3) [
             Input = 0b000,
             Output = 0b001,
-            AltFunc0 = 0b100  // PL011 UART RX
-
+            AltFunc0 = 0b100,  // PL011 UART RX
+            AltFunc1 = 0b101,
+            AltFunc2 = 0b110,
+            AltFunc5 = 0b010,
         ],
 
         /// Pin 14
         FSEL14 OFFSET(12) NUMBITS(3) [
             Input = 0b000,
             Output = 0b001,
-            AltFunc0 = 0b100  // PL011 UART TX
+            AltFunc0 = 0b100,  // PL011 UART TX
+            AltFunc1 = 0b101,
+            AltFunc2 = 0b110,
+            AltFunc5 = 0b010,
         ]
     ],
 
@@ -130,6 +135,20 @@ impl GPIO {
         }
 
         self.registers.GPPUD.write(GPPUD::PUD::Off);
+        self.registers.GPPUDCLK0.set(0);
+    }
+    
+
+    pub fn enable_pin(&self, pin: usize) {
+        self.registers.GPPUD.set(0);
+        for _ in 0..2000 {
+            cortex_a::asm::nop();
+        }
+        self.registers.GPPUDCLK0.set(1 << (pin % 32));
+        for _ in 0..2000 {
+            cortex_a::asm::nop();
+        }
+        self.registers.GPPUD.set(0);
         self.registers.GPPUDCLK0.set(0);
     }
 }
