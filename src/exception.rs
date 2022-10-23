@@ -1,7 +1,8 @@
 use core::arch::global_asm;
-
 use cortex_a::registers::VBAR_EL1;
 use tock_registers::interfaces::Writeable;
+
+use crate::println;
 
 global_asm!(include_str!("exception.s"));
 
@@ -29,10 +30,10 @@ const EXCEPTION_ERROR_MESSAGES: [&'static str; 16] = [
 
 #[no_mangle]
 pub fn show_invalid_entry_message(exception_type: usize, esr_el1: usize, elr_el1: usize) {
-    
+    println!("invalid exception: {}, ESR_EL1: {}, ELR_EL1: {}", EXCEPTION_ERROR_MESSAGES[exception_type], esr_el1, elr_el1);
 }
 
-pub unsafe fn init_vectors() {
+pub unsafe fn _init_vectors() {
     VBAR_EL1.set(0);
 }
 

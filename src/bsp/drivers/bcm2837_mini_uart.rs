@@ -1,3 +1,5 @@
+use core::fmt;
+
 use tock_registers::{
     interfaces::{Readable, Writeable},
     register_bitfields, register_structs,
@@ -155,9 +157,9 @@ impl MiniUart {
         self.registers.MU_CNTL.set((MU_CNTL::RXEN::SET + MU_CNTL::TXEN::SET + MU_CNTL::RXAUTOEN::SET + MU_CNTL::RXAUTOEN::SET).value);
     }
 
-    pub fn write_char(&self, c: char) {
+    pub fn putc(&self, c: char) {
         if c == '\r' {
-            self.write_char('\n');
+            self.putc('\n');
         }
 
         while !self.registers.MU_LSR.matches_all(MU_LSR::TXEMPTY::SET) {
@@ -172,10 +174,13 @@ impl MiniUart {
         }
         char::from_u32(self.registers.MU_IO.read(MU_IO::BYTE)).unwrap()
     }
-    
-    pub fn write_str(&self, string: &str) {
-         for c in string.chars() {
-             self.write_char(c);
-         }
-     }
+}
+
+impl fmt::Write for MiniUart {
+    fn write_str(&mut self, s: &str) -> fmt::Result {
+        for c in s.chars() {
+            self.putc(c);
+        }
+        Ok(())
+    }
 }
