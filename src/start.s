@@ -56,13 +56,37 @@ set_stack:
 
     cmp     x5, #0
     bne     slave_core_sleep
+    b       _rust_entry
+
+    adr     x0, SCTLR_INIT_VAL
+    ldr     x0, [x0]
+    msr     sctlr_el1, x0
+    
+    adr     x0, HCR_INIT_VAL
+    ldr     x0, [x0]
+    msr     hcr_el2, x0
+    
+    adr     x0, SCR_INIT_VAL
+    ldr     x0, [x0]
+    msr     scr_el3, x0
+
+    adr     x0, SPSR_EL3_INIT_VAL
+    ldr     x0, [x0]
+    msr     spsr_el3, x0
+
+    adr     x0, el1_entry
+    msr     elr_el3, x0
+    eret
+
+el1_entry:
+    cmp     x5, #0
+    bne     slave_core_sleep
 
     adr     x0, bss_begin
     adr     x1, bss_end
     sub     x1, x1, x0
     bl      memzero
 
-    mrs     x0, CurrentEL
     bl      _rust_entry
     b       hang
 
@@ -101,6 +125,7 @@ memzero:
     subs    x1, x1, #8
     bgt     memzero
     ret
+
 
 .globl irq_init_vectors
 irq_init_vectors:

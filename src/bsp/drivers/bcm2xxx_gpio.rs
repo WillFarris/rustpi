@@ -5,7 +5,7 @@
 //! GPIO Driver.
 
 use tock_registers::{
-    interfaces::{ReadWriteable, Writeable},
+    interfaces::{ReadWriteable, Writeable, Readable},
     register_bitfields, register_structs,
     registers::ReadWrite,
 };
@@ -114,6 +114,12 @@ pub struct GPIO {
     registers: Registers,
 }
 
+pub fn spin_for_cycles(n: usize) {
+    for _ in 0..n {
+        cortex_a::asm::nop();
+    }
+}
+
 impl GPIO {
     pub const unsafe fn new(mmio_start_addr: usize) -> Self {
         Self {
@@ -121,34 +127,70 @@ impl GPIO {
         }
     }
 
-    pub fn map_pl011_uart(&self) {
-        self.registers.GPFSEL1.modify(GPFSEL1::FSEL15::AltFunc0 + GPFSEL1::FSEL14::AltFunc0);
+    fn set_func(&mut self, pin: u32, func: u32) {
+        let bit_start = (pin * 3) % 30;
+
+        let mut selector = self.registers.GPFSEL1.get();
+        selector &= !(7 << bit_start);
+        selector |= func << bit_start;
+
+
+        self.registers.GPFSEL1.set(selector);
+    }
+
+    pub fn enable_pin(&mut self, pin: usize) {
+        self.registers.GPPUD.set(0);
+        spin_for_cycles(2000);
+        self.registers.GPPUDCLK0.set(1 << (pin % 32));
+        spin_for_cycles(2000);
+        self.registers.GPPUD.set(0);
+        self.registers.GPPUDCLK0.set(0);
+    }
+
+    pub fn init_mini_uart_pins(&mut self) {
+        self.set_func(14, 2);
+        self.set_func(15, 2);
+
+        self.enable_pin(14);
+        self.enable_pin(15);
+    }
+
+    fn disable_pud_14_15_bcm2837(&mut self) {
+
+        // Make an educated guess for a good delay value (Sequence described in the BCM2837
+        // peripherals PDF).
+        //
+        // - According to Wikipedia, the fastest RPi4 clocks around 1.5 GHz.
+        // - The Linux 2837 GPIO driver waits 1 µs between the steps.
+        //
+        // So lets try to be on the safe side and default to 2000 cycles, which would equal 1 µs
+        // would the CPU be clocked at 2 GHz.
+        const DELAY: usize = 2000;
 
         self.registers.GPPUD.write(GPPUD::PUD::Off);
-        for _ in 0..2000 {
-            cortex_a::asm::nop();
-        }
+        spin_for_cycles(DELAY);
 
-        self.registers.GPPUDCLK0.write(GPPUDCLK0::PUDCLK15::AssertClock + GPPUDCLK0::PUDCLK14::AssertClock);
-        for _ in 0..2000 {
-            cortex_a::asm::nop();
-        }
+        self.registers
+            .GPPUDCLK0
+            .write(GPPUDCLK0::PUDCLK15::AssertClock + GPPUDCLK0::PUDCLK14::AssertClock);
+        spin_for_cycles(DELAY);
 
         self.registers.GPPUD.write(GPPUD::PUD::Off);
         self.registers.GPPUDCLK0.set(0);
     }
-    
 
-    pub fn enable_pin(&self, pin: usize) {
-        self.registers.GPPUD.set(0);
-        for _ in 0..2000 {
-            cortex_a::asm::nop();
-        }
-        self.registers.GPPUDCLK0.set(1 << (pin % 32));
-        for _ in 0..2000 {
-            cortex_a::asm::nop();
-        }
-        self.registers.GPPUD.set(0);
-        self.registers.GPPUDCLK0.set(0);
+    /// Map PL011 UART as standard output.
+    ///
+    /// TX to pin 14
+    /// RX to pin 15
+    pub fn map_pl011_uart(&mut self) {
+        // Select the UART on pins 14 and 15.
+        self.registers
+            .GPFSEL1
+            .modify(GPFSEL1::FSEL15::AltFunc5 + GPFSEL1::FSEL14::AltFunc5);
+
+        // Disable pull-up/down on pins 14 and 15.
+        self.disable_pud_14_15_bcm2837();
+
     }
 }
