@@ -30,22 +30,22 @@ core0_stack:
     adr     x4, __EL3_stack_core0
     b       set_stack
 core1_stack:
-    adr     x2, __EL0_stack_core1
+    adr     x1, __EL0_stack_core1
     adr     x2, __EL1_stack_core1
     adr     x3, __EL2_stack_core1
     adr     x4, __EL3_stack_core1
     b       set_stack
 core2_stack:
     adr     x1, __EL0_stack_core2
-    adr     x2, __EL0_stack_core2
-    adr     x3, __EL1_stack_core2
-    adr     x4, __EL2_stack_core2
+    adr     x2, __EL1_stack_core2
+    adr     x3, __EL2_stack_core2
+    adr     x4, __EL3_stack_core2
     b       set_stack
 core3_stack:
     adr     x1, __EL0_stack_core3
-    adr     x2, __EL0_stack_core3
-    adr     x3, __EL1_stack_core3
-    adr     x4, __EL2_stack_core3
+    adr     x2, __EL1_stack_core3
+    adr     x3, __EL2_stack_core3
+    adr     x4, __EL3_stack_core3
     b       set_stack
 
 set_stack:

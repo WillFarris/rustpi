@@ -1,9 +1,7 @@
-BUILDTYPE ?= debug
+BUILDTYPE ?= release
 
-RUST_FLAGS = --target aarch64-unknown-none
-ifeq ($(BUILDTYPE), release)
-    RUST_FLAGS +=" --release"
-endif
+RUST_FLAGS = --$(BUILDTYPE) --target aarch64-unknown-none
+
 QEMU_FLAGS = -s -M raspi3b -cpu cortex-a53 -serial null -serial stdio -display none
 
 CMD_PREFIX.Darwin.x86_64=aarch64-elf-
