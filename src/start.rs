@@ -8,7 +8,7 @@ static HCR_INIT_VAL: u64 = HCR_EL2::RW::EL1IsAarch64.value;
 #[no_mangle]
 static SCR_INIT_VAL: u64 = SCR_EL3::RW::NextELIsAarch64.value | SCR_EL3::NS::NonSecure.value;
 #[no_mangle]
-static SPSR_EL3_INIT_VAL: u64 = SPSR_EL3::M::EL1h.value;
+static SPSR_EL3_INIT_VAL: u64 = SPSR_EL3::D::Masked.value | SPSR_EL3::A::Masked.value | SPSR_EL3::I::Masked.value | SPSR_EL3::F::Masked.value | SPSR_EL3::M::EL1h.value;
 
 global_asm!(include_str!("start.s"));
 

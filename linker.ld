@@ -32,7 +32,7 @@ SECTIONS
         __stack_start_core0__ = .;
         . = . + 1024;				/* 1KB EL0 stack */
         __EL0_stack_core0 = .;
-        . = . + 32768;				/* 32KB EL1 stack */
+        . = . + 65536;				/* 64KB EL1 stack */
         __EL1_stack_core0 = .;
         . = . + 512;				/* 512B EL2 stack */
         __EL2_stack_core0 = .;
@@ -45,7 +45,7 @@ SECTIONS
         __stack_start_core1__ = .;
         . = . + 1024;				/* 1KB EL0 stack */
         __EL0_stack_core1 = .;
-        . = . + 32768;				/* 32KB EL1 stack */
+        . = . + 65536;				/* 64KB EL1 stack */
         __EL1_stack_core1 = .;
         . = . + 512;				/* 512B EL2 stack */
         __EL2_stack_core1 = .;
@@ -58,7 +58,7 @@ SECTIONS
         __stack_start_core2__ = .;
         . = . + 1024;				/* 1KB EL0 stack */
         __EL0_stack_core2 = .;
-        . = . + 32768;				/* 32KB EL1 stack */
+        . = . + 65536;				/* 64KB EL1 stack */
         __EL1_stack_core2 = .;
         . = . + 512;				/* 512B EL2 stack */
         __EL2_stack_core2 = .;
@@ -71,7 +71,7 @@ SECTIONS
         __stack_start_core3__ = .;
         . = . + 1024;				/* 1KB EL0 stack */
         __EL0_stack_core3 = .;
-        . = . + 32768;				/* 32KB EL1 stack */
+        . = . + 65536;				/* 64KB EL1 stack */
         __EL1_stack_core3 = .;
         . = . + 512;				/* 512B EL2 stack */
         __EL2_stack_core3 = .;
@@ -85,6 +85,6 @@ SECTIONS
     
 
     /DISCARD/ : {
-        *(*.debug*)
+        //*(*.debug*)
     }
 }

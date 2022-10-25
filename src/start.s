@@ -54,10 +54,6 @@ set_stack:
     msr     sp_el2, x3
     mov     sp, x4
 
-    cmp     x5, #0
-    bne     slave_core_sleep
-    b       _rust_entry
-
     adr     x0, SCTLR_INIT_VAL
     ldr     x0, [x0]
     msr     sctlr_el1, x0
@@ -76,9 +72,17 @@ set_stack:
 
     adr     x0, el1_entry
     msr     elr_el3, x0
+
+    //cmp     x5, #0
+    //bne     slave_core_sleep
+    //b       _rust_entry
+
     eret
 
 el1_entry:
+    bl      irq_init_vectors
+    bl      irq_enable
+
     cmp     x5, #0
     bne     slave_core_sleep
 
@@ -117,6 +121,19 @@ core_execute:
     str     w1, [x2, x0, lsl 2]
     sev
     dmb     sy
+    ret
+
+.globl get_el
+get_el:
+    mrs     x0, CurrentEL
+    lsr     x0, x0, #2
+    and     x0, x0, 0b11
+    ret
+
+.globl get_core
+get_core:
+    mrs     x0, mpidr_el1
+    and     x0, x0, 0b11
     ret
 
 .globl memzero

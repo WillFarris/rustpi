@@ -1,3 +1,5 @@
+use core::fmt::Write;
+
 use super::drivers;
 
 const PBASE: usize = 0x3F00_0000;

@@ -30,7 +30,12 @@ const EXCEPTION_ERROR_MESSAGES: [&'static str; 16] = [
 
 #[no_mangle]
 pub fn show_invalid_entry_message(exception_type: usize, esr_el1: usize, elr_el1: usize) {
-    println!("invalid exception: {}, ESR_EL1: {}, ELR_EL1: {}", EXCEPTION_ERROR_MESSAGES[exception_type], esr_el1, elr_el1);
+    unsafe {
+        core::fmt::Write::write_str(&mut crate::bsp::raspberrypi::MINI_UART_GLOBAL, "invalid exception\n\r").unwrap_or(());
+    }
+    //println!("invalid exception: {}, ESR_EL1: {}, ELR_EL1: {}", EXCEPTION_ERROR_MESSAGES[exception_type], esr_el1, elr_el1);
+
+    loop {}
 }
 
 pub unsafe fn _init_vectors() {
