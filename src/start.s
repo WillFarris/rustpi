@@ -19,10 +19,6 @@ _start:
     cmp     x5, #3
     beq     core3_stack
 
-hang:
-    wfe
-    b       hang
-
 core0_stack:
     adr     x1, __EL0_stack_core0
     adr     x2, __EL1_stack_core0
@@ -66,33 +62,18 @@ set_stack:
     ldr     x0, [x0]
     msr     scr_el3, x0
 
+    adr     x0, CPACR_EL1_INIT_VAL
+    ldr     x0, [x0]
+    msr     cpacr_el1, x0
+
     adr     x0, SPSR_EL3_INIT_VAL
     ldr     x0, [x0]
     msr     spsr_el3, x0
 
-    adr     x0, el1_entry
+    adr     x0, _el1_rust_entry
     msr     elr_el3, x0
 
-    //cmp     x5, #0
-    //bne     slave_core_sleep
-    //b       _rust_entry
-
     eret
-
-el1_entry:
-    bl      irq_init_vectors
-    bl      irq_enable
-
-    cmp     x5, #0
-    bne     slave_core_sleep
-
-    adr     x0, bss_begin
-    adr     x1, bss_end
-    sub     x1, x1, x0
-    bl      memzero
-
-    bl      _rust_entry
-    b       hang
 
 .balign 4
 .globl slave_core_sleep
@@ -146,16 +127,16 @@ memzero:
 
 .globl irq_init_vectors
 irq_init_vectors:
-    adr x0, vectors
-    msr vbar_el1, x0
+    adr     x0, vectors
+    msr     vbar_el1, x0
     ret
 
 .globl irq_enable
 irq_enable:
-    msr daifclr, #2
+    msr     daifclr, #2
     ret
 
 .globl irq_disable
 irq_disable:
-    msr daifset, #2
+    msr     daifset, #2
     ret

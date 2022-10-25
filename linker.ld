@@ -16,7 +16,7 @@ SECTIONS
     }
 	.data : { 
         *(.data*)
-    } : segment_data
+    }
 	. = ALIGN(16);
 	bss_begin = .;
 	.bss : {
@@ -27,7 +27,7 @@ SECTIONS
     /**************************************************
      *      Kernel Stack                              *
      **************************************************/
-    .stack_core0 : {
+    .stack_core0 (NOLOAD) : {
         . = ALIGN(16);
         __stack_start_core0__ = .;
         . = . + 1024;				/* 1KB EL0 stack */
@@ -40,7 +40,7 @@ SECTIONS
         __EL3_stack_core0 = .;
         __stack_end_core0__ = .;    
     }
-	.stack_core1 : {
+	.stack_core1 (NOLOAD) : {
         . = ALIGN(16);
         __stack_start_core1__ = .;
         . = . + 1024;				/* 1KB EL0 stack */
@@ -53,7 +53,7 @@ SECTIONS
         __EL3_stack_core1 = .;
         __stack_end_core1__ = .;    
     }
-	.stack_core2 : {
+	.stack_core2 (NOLOAD) : {
         . = ALIGN(16);
         __stack_start_core2__ = .;
         . = . + 1024;				/* 1KB EL0 stack */
@@ -66,7 +66,7 @@ SECTIONS
         __EL3_stack_core2 = .;
         __stack_end_core2__ = .;    
     }
-	.stack_core3 : {
+	.stack_core3 (NOLOAD) : {
         . = ALIGN(16);
         __stack_start_core3__ = .;
         . = . + 1024;				/* 1KB EL0 stack */
@@ -85,6 +85,6 @@ SECTIONS
     
 
     /DISCARD/ : {
-        //*(*.debug*)
+        
     }
 }
