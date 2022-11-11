@@ -163,14 +163,14 @@ impl MiniUart {
         }
 
         while !self.registers.MU_LSR.matches_all(MU_LSR::TXEMPTY::SET) {
-            cortex_a::asm::nop();
+            aarch64_cpu::asm::nop();
         }
         self.registers.MU_IO.set(c as u32);
     }
     
     pub fn read_char(&self) -> char {
         while self.registers.MU_LSR.matches_all(MU_LSR::DATAREADY::CLEAR) {
-            cortex_a::asm::nop();
+            aarch64_cpu::asm::nop();
         }
         char::from_u32(self.registers.MU_IO.read(MU_IO::BYTE)).unwrap()
     }

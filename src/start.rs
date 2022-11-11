@@ -1,5 +1,5 @@
 use core::arch::global_asm;
-use cortex_a::registers::*;
+use aarch64_cpu::registers::*;
 
 use crate::get_core;
 
@@ -24,7 +24,7 @@ extern "C" {
 
 pub fn _hang() -> ! {
     loop {
-        cortex_a::asm::wfe();
+        aarch64_cpu::asm::wfe();
     }
 }
 

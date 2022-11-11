@@ -1,5 +1,5 @@
 use core::arch::global_asm;
-use cortex_a::registers::VBAR_EL1;
+use aarch64_cpu::registers::VBAR_EL1;
 use tock_registers::interfaces::Writeable;
 
 use crate::println;
@@ -34,7 +34,7 @@ pub fn show_invalid_entry_message(exception_type: usize, esr_el1: usize, elr_el1
     loop {}
 }
 
-pub unsafe fn _init_vectors() {
+pub unsafe fn _init_vectors(_addr: u64) {
     VBAR_EL1.set(0);
 }
 
