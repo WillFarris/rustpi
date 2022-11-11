@@ -28,15 +28,16 @@ pub mod mmu {
 
         pub fn identity_map(&mut self) {
             for i in 0..NUM_TABLES {
-                let lvl2_address = (&self.lower_level3[i] as *const usize) as usize;
-                let lvl2_address_offset = lvl2_address >> 16;
-                self.higher_level2[i] = (lvl2_address_offset << 16) | (0b11 << 0);
+                let lvl2_addr = ((&self.lower_level3[i] as *const usize) as usize) >> 16;
+                self.lower_level2[i] = 
+                    (lvl2_addr << 16) | 
+                    (0b11 << 0);
 
                 for j in 0..8192 {
                     let virt_address = (i << 29) + (j << 16);
-                    let mut mair_attr = 4;
+                    let mut mair_attr = 1;
 
-                    if virt_address > PBASE_START && virt_address < PBASE_END {
+                    if virt_address >= PBASE_START && virt_address <= PBASE_END {
                         mair_attr = 0;
                     } /* TODO: else if virt_address == a page w/ a lock, mark as non-cacheable */
 
@@ -47,13 +48,16 @@ pub mod mmu {
                         (0b0       <<  7) | // Read-Write
                         (0b0       <<  6) | // Kernel only
                         (mair_attr <<  2) | // MAIR attribute index
-                        (0b11      <<  0)   // valid page
-                    ;
+                        (0b11      <<  0);  // valid page
+                    
+                    //crate::println!("Last entry in L3 table for L2 table {} at index {:#0x}: {:#0x}", i, j, self.lower_level3[i][j]);
                 }
+                //crate::println!("Address of translation_table: {:#0x}", unsafe {&TRANSLATION_TABLE as *const PageTable as usize});
             }
         }
     }
 
+    #[no_mangle]
     static mut TRANSLATION_TABLE: PageTable = PageTable::new();
 
     pub fn init() {
@@ -61,20 +65,6 @@ pub mod mmu {
         unsafe {
             TRANSLATION_TABLE.identity_map();
         }
-
-        // Set TCR_EL1
-        TCR_EL1.write(
-            TCR_EL1::TBI0::Used +
-            TCR_EL1::IPS::Bits_40 + 
-            TCR_EL1::TG0::KiB_64 +
-            TCR_EL1::SH0::Outer +
-            TCR_EL1::ORGN0::WriteBack_ReadAlloc_WriteAlloc_Cacheable +
-            TCR_EL1::IRGN0::WriteBack_ReadAlloc_NoWriteAlloc_Cacheable +
-            TCR_EL1::EPD0::EnableTTBR0Walks +
-            TCR_EL1::A1::TTBR0 +
-            TCR_EL1::EPD1::DisableTTBR1Walks
-        );
-        
 
         // Set MAIR_EL1
         MAIR_EL1.write(
@@ -84,6 +74,20 @@ pub mod mmu {
             MAIR_EL1::Attr4_Normal_Inner::NonCacheable +
             MAIR_EL1::Attr4_Normal_Outer::NonCacheable
         );
+
+        // Set TCR_EL1
+        let tcr_el1 = (
+            TCR_EL1::TBI0::Used +
+            TCR_EL1::IPS::Bits_40 + 
+            TCR_EL1::TG0::KiB_64 +
+            TCR_EL1::SH0::Outer +
+            TCR_EL1::ORGN0::WriteBack_ReadAlloc_WriteAlloc_Cacheable +
+            TCR_EL1::IRGN0::WriteBack_ReadAlloc_NoWriteAlloc_Cacheable +
+            TCR_EL1::EPD0::EnableTTBR0Walks +
+            TCR_EL1::A1::TTBR0 +
+            TCR_EL1::EPD1::DisableTTBR1Walks
+        ).value | 32;
+        TCR_EL1.set(tcr_el1);
 
         // Set TTBR1_EL1 to point to translation_table.higher_level2
         TTBR1_EL1.set(
@@ -100,7 +104,6 @@ pub mod mmu {
         );
 
         // Set d-cache, i-cache, mmu enable bits of SCTLR_EL1
-        
         SCTLR_EL1.write(
             SCTLR_EL1::C::Cacheable +
             SCTLR_EL1::I::Cacheable +
@@ -110,7 +113,12 @@ pub mod mmu {
 
         // Invalidate TLB, vmalle1
         unsafe {
-            core::arch::asm!("tlbi vmalle1");
+            core::arch::asm!("
+                isb
+                tlbi vmalle1
+                dsb sy
+                isb
+            ");
         }
 
     }

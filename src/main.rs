@@ -16,9 +16,11 @@ extern "C" {
 
 #[no_mangle]
 pub fn kernel_main() -> ! {
-    //bsp::memory::mmu::init();
+    bsp::memory::mmu::init();
 
     bsp::raspberrypi::uart_init();
+
+    
     let (el, core) = unsafe {
         (get_el(), get_core())
     };
