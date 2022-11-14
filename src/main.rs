@@ -30,8 +30,10 @@ pub fn kernel_main() -> ! {
     }
 
     unsafe {
-        let qa7 = &mut bsp::raspberrypi::QA7_REGS;
-        qa7.init_core_timer(0, 1000);
+        //let qa7 = &mut bsp::raspberrypi::QA7_REGS;
+        //qa7.init_core_timer(0, 1000);
+
+        bsp::raspberrypi::QA7_REGS.init_core_timer(0, 1);
     }
 
     let el = get_el();

@@ -5,7 +5,7 @@ pub const PBASE_END: usize = 0x4000_FFFF;
 pub const GPIO_ADDR: usize = PBASE_START + 0x0020_0000;
 pub const AUX_REGS_ADDR: usize = PBASE_START + 0x0021_5000;
 const _PL011_UART_ADDR: usize = PBASE_START + 0x0020_1000;
-const QA7_REGS_ADDR: usize = PBASE_START + 0x4000_0000;
+const QA7_REGS_ADDR: usize = 0x4000_0000;
 
 
 pub static MINI_UART: drivers::bcm2837_mini_uart::MiniUart = unsafe { drivers::bcm2837_mini_uart::MiniUart::new(AUX_REGS_ADDR) };
