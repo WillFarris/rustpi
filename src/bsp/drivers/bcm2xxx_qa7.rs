@@ -295,13 +295,13 @@ struct QA7RegistersInner {
 }
 
 impl QA7RegistersInner {
-    pub const unsafe fn new(mmio_start_addr: usize) -> Self {
+    const unsafe fn new(mmio_start_addr: usize) -> Self {
         Self {
             registers: Registers::new(mmio_start_addr),
         }
     }
 
-    pub fn init_core_timer(&mut self, core: u8, freq_divider: u64) {
+    fn init_core_timer(&mut self, core: u8, freq_divider: u64) {
         let freq = CNTFRQ_EL0.get();
         let timer = freq / freq_divider;
         CNTP_TVAL_EL0.set(timer);
@@ -343,24 +343,6 @@ impl QA7RegistersInner {
                 panic!("Can't enable core timer on invalid core")
             }
         }
-    }
-}
-
-struct CoreTimer {
-    core: u8,
-    register_block: &'static mut QA7Registers,
-}
-
-impl CoreTimer {
-    pub fn new(core: u8, qa7_registers: &'static mut QA7Registers) -> Self {
-        Self {
-            core,
-            register_block: qa7_registers
-        }
-    }
-
-    pub fn init(&mut self, freq_divider: u64) {
-        self.register_block.init_core_timer(self.core, freq_divider);
     }
 
 }
