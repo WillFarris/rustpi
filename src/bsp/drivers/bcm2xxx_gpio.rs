@@ -10,6 +10,7 @@ use tock_registers::{
     registers::ReadWrite,
 };
 
+use crate::utils::spin_for_cycles;
 use super::common::MMIODerefWrapper;
 
 //--------------------------------------------------------------------------------------------------
@@ -112,12 +113,6 @@ type Registers = MMIODerefWrapper<RegisterBlock>;
 
 pub struct GPIO {
     registers: Registers,
-}
-
-pub fn spin_for_cycles(n: usize) {
-    for _ in 0..n {
-        aarch64_cpu::asm::nop();
-    }
 }
 
 impl GPIO {

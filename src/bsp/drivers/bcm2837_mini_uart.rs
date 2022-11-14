@@ -1,11 +1,11 @@
-use core::fmt;
-
+use core::fmt::{self, Write};
 use tock_registers::{
     interfaces::{Readable, Writeable},
     register_bitfields, register_structs,
     registers::{ReadOnly, ReadWrite},
 };
 
+use crate::{console, synchronization::SpinLock};
 use super::common::MMIODerefWrapper;
 
 register_bitfields! {
@@ -121,12 +121,12 @@ register_structs! {
         (0x40 => MU_IO: ReadWrite<u32, MU_IO::Register>),
         (0x44 => MU_IER: ReadWrite<u32>),
         (0x48 => MU_IIR: ReadWrite<u32>),
-        (0x4c => MU_LCR: ReadWrite<u32>),
+        (0x4c => MU_LCR: ReadWrite<u32, MU_LCR::Register>),
         (0x50 => MU_MCR: ReadWrite<u32>),
         (0x54 => MU_LSR: ReadWrite<u32, MU_LSR::Register>),
         (0x58 => MU_MSR: ReadWrite<u32>),
         (0x5c => MU_SCRATCH: ReadWrite<u32>),
-        (0x60 => MU_CNTL: ReadWrite<u32>),
+        (0x60 => MU_CNTL: ReadWrite<u32, MU_CNTL::Register>),
         (0x64=> MU_STAT: ReadWrite<u32>),
         (0x68 => MU_BAUD: ReadWrite<u32>),
         (0x6c => @END),
@@ -136,10 +136,63 @@ register_structs! {
 type Registers = MMIODerefWrapper<AuxRegisters>;
 
 pub struct MiniUart {
-    registers: Registers
+    inner: SpinLock<MiniUartInner>,
 }
 
 impl MiniUart {
+    pub const unsafe fn new(mmio_start_addr: usize) -> Self {
+        Self {
+            inner: SpinLock::new(MiniUartInner::new(mmio_start_addr))
+        }
+    }
+
+    pub fn init(&self) {
+        let mut data = self.inner.lock().unwrap();
+        data.init();
+    }
+}
+
+use crate::synchronization::interface::Mutex;
+
+impl console::interface::Write for MiniUart {
+
+    fn write_char(&self, c: char) {
+        //self.inner.lock(|inner| inner.write_char(c)).unwrap();
+        let mut data = self.inner.lock().unwrap();
+        data.write_char(c).unwrap();
+    }
+
+    fn write_fmt(&self, args: fmt::Arguments) -> fmt::Result {
+        //self.inner.lock(|inner| fmt::Write::write_fmt(inner, args))
+        let mut data = self.inner.lock().unwrap();
+        fmt::Write::write_fmt(&mut *data, args)
+    }
+
+    fn flush(&self) {
+        //todo!()
+    }
+}
+
+impl console::interface::Read for MiniUart {
+    fn read_char(&self) -> char {
+        //self.inner.lock(|inner| inner.read_char())
+        let data = self.inner.lock().unwrap();
+        data.read_char()
+    }
+
+    fn clear_rx(&self) {
+        todo!()
+    }
+}
+
+
+impl console::interface::ReadWrite for MiniUart {}
+
+struct MiniUartInner {
+    registers: Registers
+}
+
+impl MiniUartInner {
     pub const unsafe fn new(mmio_start_addr: usize) -> Self {
         Self {
             registers: Registers::new(mmio_start_addr),
@@ -148,13 +201,13 @@ impl MiniUart {
 
     #[no_mangle]
     pub fn init(&mut self) {
-        self.registers.AUXENB.set(AUXENB::MiniUART::Enabled.value);
+        self.registers.AUXENB.write(AUXENB::MiniUART::Enabled);
         self.registers.MU_CNTL.set(0);
         self.registers.MU_IER.set(0);
-        self.registers.MU_LCR.set(MU_LCR::DATASIZE::EightBit.value);
+        self.registers.MU_LCR.write(MU_LCR::DATASIZE::EightBit);
         self.registers.MU_MCR.set(0);
         self.registers.MU_BAUD.set(270);
-        self.registers.MU_CNTL.set((MU_CNTL::RXEN::SET + MU_CNTL::TXEN::SET + MU_CNTL::RXAUTOEN::SET + MU_CNTL::RXAUTOEN::SET).value);
+        self.registers.MU_CNTL.write(MU_CNTL::RXEN::SET + MU_CNTL::TXEN::SET + MU_CNTL::RXAUTOEN::SET + MU_CNTL::RXAUTOEN::SET);
     }
 
     pub fn putc(&self, c: char) {
@@ -176,7 +229,7 @@ impl MiniUart {
     }
 }
 
-impl fmt::Write for MiniUart {
+impl fmt::Write for MiniUartInner {
     fn write_str(&mut self, s: &str) -> fmt::Result {
         for c in s.chars() {
             self.putc(c);

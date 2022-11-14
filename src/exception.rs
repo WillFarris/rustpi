@@ -30,15 +30,15 @@ const EXCEPTION_ERROR_MESSAGES: [&'static str; 16] = [
 
 #[no_mangle]
 pub fn show_invalid_entry_message(exception_type: usize, esr_el1: usize, elr_el1: usize) {
-    println!("invalid exception: {}, ESR_EL1: {}, ELR_EL1: {}", EXCEPTION_ERROR_MESSAGES[exception_type], esr_el1, elr_el1);
+    println!("invalid exception: {}, ESR_EL1: {:x}, ELR_EL1: {:x}", EXCEPTION_ERROR_MESSAGES[exception_type], esr_el1, elr_el1);
     loop {}
 }
 
-pub unsafe fn _init_vectors(_addr: u64) {
-    VBAR_EL1.set(0);
+pub unsafe fn init_vectors(addr: u64) {
+    VBAR_EL1.set(addr);
 }
 
 #[no_mangle]
 pub unsafe fn handle_irq() {
-
+    println!("Got IRQ");
 }
