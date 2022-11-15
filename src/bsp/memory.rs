@@ -8,7 +8,7 @@ pub mod mmu {
 
     const NUM_TABLES: usize = 3;
 
-    #[repr(C)]
+    #[repr(C, align(65536))]
     struct PageTable {
         lower_level3: [[usize; 8192]; NUM_TABLES],
         higher_level3: [[usize; 8192]; NUM_TABLES],

@@ -11,11 +11,15 @@ mod synchronization;
 mod utils;
 
 use utils::{get_el, get_core};
-use crate::synchronization::interface::Mutex;
+use crate::synchronization::{SpinLock, interface::Mutex};
 
 extern "C" {
     fn vectors();
+    fn core_execute(core: u8, f: fn());
 }
+
+#[no_mangle]
+static mut TEST_LOCK: SpinLock<usize> = SpinLock::new(0usize);
 
 #[no_mangle]
 pub fn kernel_main() -> ! {
@@ -25,14 +29,7 @@ pub fn kernel_main() -> ! {
 
     unsafe {
         crate::exception::init_vectors(vectors as *const () as u64);
-
-        core::arch::asm!("msr daifclr, 0b10");
-    }
-
-    unsafe {
-        //let qa7 = &mut bsp::raspberrypi::QA7_REGS;
-        //qa7.init_core_timer(0, 1000);
-
+        core::arch::asm!("msr daifset, 0b10");
         bsp::raspberrypi::QA7_REGS.init_core_timer(0, 1);
     }
 
@@ -40,6 +37,33 @@ pub fn kernel_main() -> ! {
     let core = get_core();
 
     println!("\n\rRaspberry Pi 3\n\rIn EL{} on core {}\n\r", el, core);
+
+    unsafe {
+        let mut data = TEST_LOCK.lock().unwrap();
+        *data += 1;
+    }
+
+    unsafe {
+        for i in 1..=3 {
+            core_execute(i, || {
+                let mut data = TEST_LOCK.lock().unwrap();
+                *data += 1;
+                println!("Core {}", get_core());
+            });
+        }
+    }
+    
+    for _ in 0..10 {
+        utils::sys_timer_sleep_ms(1);
+        print!(".");
+    }
+    println!("");
+    
+
+    unsafe {
+        let data = TEST_LOCK.lock().unwrap();
+        println!("TEST_LOCK: {}", *data);
+    }
 
     loop {
         let c = console::console().read_char();

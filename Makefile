@@ -17,14 +17,14 @@ all: kernel.img
 
 clean:
 	cargo clean
-	rm kernel.dump kernel8.img
+	rm kernel8.dump kernel8.img
 
 kernel.img: kernel
 	$(CMD_PREFIX)objcopy target/aarch64-unknown-none/$(BUILDTYPE)/kernel -O binary kernel8.img
 
 kernel:
 	RUSTFLAGS="-C link-arg=linker.ld" cargo rustc $(RUST_FLAGS)
-	$(CMD_PREFIX)objdump -D target/aarch64-unknown-none/$(BUILDTYPE)/kernel > kernel.dump
+	$(CMD_PREFIX)objdump -D target/aarch64-unknown-none/$(BUILDTYPE)/kernel > kernel8.dump
 
 qemu: kernel
 	qemu-system-aarch64 $(QEMU_FLAGS) -kernel target/aarch64-unknown-none/$(BUILDTYPE)/kernel

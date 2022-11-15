@@ -1,6 +1,5 @@
 __rpi_phys_binary_load_addr = 0x80000;
 
-
 SECTIONS
 {
     /**************************************************
@@ -17,7 +16,6 @@ SECTIONS
 	.data : { 
         *(.data*)
     }
-	. = ALIGN(65536);
 	bss_begin = .;
 	.bss : {
 		 *(.bss*)
@@ -81,8 +79,6 @@ SECTIONS
     }
 
     __kernel_img_end = .;
-
-    
 
     /DISCARD/ : {
         
