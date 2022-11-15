@@ -284,9 +284,14 @@ impl QA7Registers {
         }
     }
 
-    pub fn init_core_timer(&mut self, core: u8, freq_divider: u64) {
+    pub fn init_core_timer(&self, core: u8, freq_divider: u64) {
         let mut qa7 = self.inner.lock().unwrap();
         qa7.init_core_timer(core, freq_divider);
+    }
+
+    pub fn read_clear_mailbox(&self, core: u8, mailbox: usize) -> u32 {
+        let mut qa7 = self.inner.lock().unwrap();
+        qa7.read_clear_mailbox(core, mailbox)
     }
 }
 
@@ -343,6 +348,22 @@ impl QA7RegistersInner {
                 panic!("Can't enable core timer on invalid core")
             }
         }
+    }
+
+    fn read_clear_mailbox(&mut self, core: u8, mailbox: usize) -> u32 {
+        if core > 3 {
+            panic!("Invalid core for Mailbox read: core {} mbox {}", core, mailbox);
+        }
+        if mailbox > 3 {
+            panic!("Invalid Mailbox {}", mailbox);
+        }
+        let core_offset = core as usize * 0x10;
+        let mailbox_offset = mailbox * 0x04;
+        let base_mbox_addr = &self.registers.Core0Mailbox0RdClr as *const ReadOnly<u32> as usize;
+        let selected_mbox_addr = base_mbox_addr + core_offset + mailbox_offset;
+
+        unsafe { *(selected_mbox_addr as *const u32) }
+
     }
 
 }

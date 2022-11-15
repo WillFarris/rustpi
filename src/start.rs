@@ -1,7 +1,7 @@
 use core::arch::global_asm;
 use aarch64_cpu::registers::*;
 
-use crate::get_core;
+use crate::{get_core, bsp::raspberrypi::QA7_REGS};
 
 #[no_mangle]
 static SCTLR_INIT_VAL: u64 = SCTLR_EL1::EE::LittleEndian.value | SCTLR_EL1::NAA::Disable.value | SCTLR_EL1::I::NonCacheable.value | SCTLR_EL1::C::NonCacheable.value | SCTLR_EL1::M::Disable.value;
@@ -28,8 +28,24 @@ pub fn _hang() -> ! {
     }
 }
 
+
+// Loop waiting for core mailbox 3 to contain a function pointer
+fn core_sleep() {
+    let core = get_core();
+    loop {
+        let mbox = QA7_REGS.read_clear_mailbox(core, 3) as usize;
+        if mbox != 0 {
+            unsafe {
+                core::arch::asm!("blr {mb}", mb = in(reg) mbox);
+            }
+        }
+    }
+}
+
 #[no_mangle]
 pub unsafe extern "C" fn _el1_rust_entry() -> ! {
+    crate::bsp::memory::mmu::init();
+
     irq_init_vectors();
     irq_enable();
 

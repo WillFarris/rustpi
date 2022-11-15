@@ -25,8 +25,6 @@ static mut TEST_LOCK: SpinLock<usize> = SpinLock::new(0usize);
 
 #[no_mangle]
 pub fn kernel_main() -> ! {
-    bsp::memory::mmu::init();
-
     bsp::raspberrypi::uart_init();
 
     unsafe {
