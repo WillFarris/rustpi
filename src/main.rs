@@ -5,13 +5,16 @@
 mod bsp;
 mod exception;
 mod start;
-pub mod print;
-pub mod console;
+mod print;
+mod console;
+mod synchronization;
+mod utils;
+
+use utils::{get_el, get_core};
+use crate::synchronization::interface::Mutex;
 
 extern "C" {
-    fn get_el() -> u64;
-    fn get_core() -> u64;
-    //fn core_execute(core: u64, f: u64);
+    fn vectors();
 }
 
 #[no_mangle]
@@ -20,24 +23,33 @@ pub fn kernel_main() -> ! {
 
     bsp::raspberrypi::uart_init();
 
-    
-    let (el, core) = unsafe {
-        (get_el(), get_core())
-    };
+    unsafe {
+        crate::exception::init_vectors(vectors as *const () as u64);
+
+        core::arch::asm!("msr daifclr, 0b10");
+    }
+
+    unsafe {
+        //let qa7 = &mut bsp::raspberrypi::QA7_REGS;
+        //qa7.init_core_timer(0, 1000);
+
+        bsp::raspberrypi::QA7_REGS.init_core_timer(0, 1);
+    }
+
+    let el = get_el();
+    let core = get_core();
 
     println!("\n\rRaspberry Pi 3\n\rIn EL{} on core {}\n\r", el, core);
 
     loop {
-        unsafe {
-            let c = bsp::raspberrypi::MINI_UART_GLOBAL.read_char();
-            bsp::raspberrypi::MINI_UART_GLOBAL.putc(c);
-        }
+        let c = console::console().read_char();
+        console::console().write_char(c);
     }
 }
 
 #[panic_handler]
-pub unsafe fn panic(_: &core::panic::PanicInfo) -> ! {
-    println!(" ~ UwU we panic now ~");
+pub unsafe fn panic(panic_info: &core::panic::PanicInfo) -> ! {
+    println!(" ~ UwU we panic now ~\n{:?}", panic_info);
     loop {
 
     }
