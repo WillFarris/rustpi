@@ -211,8 +211,8 @@ impl MiniUartInner {
     }
 
     pub fn putc(&self, c: char) {
-        if c == '\r' {
-            self.putc('\n');
+        if c == '\n' {
+            self.putc('\r');
         }
 
         while !self.registers.MU_LSR.matches_all(MU_LSR::TXEMPTY::SET) {
