@@ -62,7 +62,7 @@ unsafe impl<T> Sync for SpinLock<T> where T: ?Sized + Send {}
 impl<T> SpinLock<T> {
     pub const fn new(data: T) -> Self {
         Self {
-            guard: 0u8,
+            guard: 0,
             data: UnsafeCell::new(data),
         }
     }

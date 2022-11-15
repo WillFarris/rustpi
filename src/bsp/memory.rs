@@ -35,7 +35,7 @@ pub mod mmu {
 
                 for j in 0..8192 {
                     let virt_address = (i << 29) + (j << 16);
-                    let mut mair_attr = 1;
+                    let mut mair_attr = 4;
 
                     if virt_address >= PBASE_START && virt_address <= PBASE_END {
                         mair_attr = 0;

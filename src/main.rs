@@ -10,8 +10,10 @@ mod console;
 mod synchronization;
 mod utils;
 
+use synchronization::SpinLock;
 use utils::{get_el, get_core};
-use crate::synchronization::{SpinLock, interface::Mutex};
+
+use crate::synchronization::interface::Mutex;
 
 extern "C" {
     fn vectors();
@@ -40,25 +42,21 @@ pub fn kernel_main() -> ! {
 
     unsafe {
         let mut data = TEST_LOCK.lock().unwrap();
-        *data += 1;
+        *data = 1;
     }
 
     unsafe {
         for i in 1..=3 {
             core_execute(i, || {
-                let mut data = TEST_LOCK.lock().unwrap();
-                *data += 1;
-                println!("Core {}", get_core());
+                for _ in 0..1 {
+                    let mut data = TEST_LOCK.lock().unwrap();
+                    *data += 1;
+                }
             });
         }
     }
     
-    for _ in 0..10 {
-        utils::sys_timer_sleep_ms(1);
-        print!(".");
-    }
-    println!("");
-    
+    utils::spin_for_cycles(100000000);
 
     unsafe {
         let data = TEST_LOCK.lock().unwrap();
