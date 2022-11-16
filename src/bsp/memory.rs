@@ -8,6 +8,11 @@ pub mod mmu {
 
     const NUM_TABLES: usize = 3;
 
+    extern "C" {
+        static LOCKS_START: u8;
+        static LOCKS_END: u8;
+    }
+
     #[repr(C, align(65536))]
     struct PageTable {
         lower_level3: [[usize; 8192]; NUM_TABLES],
@@ -27,6 +32,9 @@ pub mod mmu {
         }
 
         pub fn identity_map(&mut self) {
+            let lock_start_addr = unsafe { &LOCKS_START as *const u8 as usize };
+            let lock_end_addr = unsafe { &LOCKS_END as *const u8 as usize };
+
             for i in 0..NUM_TABLES {
                 let lvl2_addr = ((&self.lower_level3[i] as *const usize) as usize) >> 16;
                 self.lower_level2[i] = 
@@ -35,16 +43,19 @@ pub mod mmu {
 
                 for j in 0..8192 {
                     let virt_address = (i << 29) + (j << 16);
-                    let mut mair_attr = 4;
+                    let mut mair_attr = 1;
 
                     if virt_address >= PBASE_START && virt_address <= PBASE_END {
                         mair_attr = 0;
-                    } /* TODO: else if virt_address == a page w/ a lock, mark as non-cacheable */
+                    } else if virt_address >= lock_start_addr && virt_address <= lock_end_addr {
+                        /* page w/ a lock, mark as non-cacheable */
+                        mair_attr = 1;
+                    }
 
                     self.lower_level3[i][j] = 
                         virt_address      | // Virtual address
                         (0b1       << 10) | // Accessed
-                        (0b11      <<  8) | // Inner-sharable
+                        (0b10      <<  8) | // Inner-sharable
                         (0b0       <<  7) | // Read-Write
                         (0b0       <<  6) | // Kernel only
                         (mair_attr <<  2) | // MAIR attribute index
@@ -60,11 +71,13 @@ pub mod mmu {
     #[no_mangle]
     static mut TRANSLATION_TABLE: PageTable = PageTable::new();
 
-    pub fn init() {
-        //TODO: Wrap TRANSLATION_TABLE with lock? But we can't use atomic locks yet...
+    pub fn identity_map_table() {
         unsafe {
             TRANSLATION_TABLE.identity_map();
         }
+    }
+
+    pub fn init() {
 
         // Set MAIR_EL1
         MAIR_EL1.write(

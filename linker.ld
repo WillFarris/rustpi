@@ -21,6 +21,12 @@ SECTIONS
 		 *(.bss*)
 	}
 	bss_end = .;
+    . = ALIGN(65536);
+    .locks : {
+        LOCKS_START = .;
+        *(.locks*)
+        LOCKS_END = .;
+    }
 
     /**************************************************
      *      Kernel Stack                              *

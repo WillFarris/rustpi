@@ -26,10 +26,10 @@ kernel:
 	RUSTFLAGS="-C link-arg=linker.ld" cargo rustc $(RUST_FLAGS)
 	$(CMD_PREFIX)objdump -D target/aarch64-unknown-none/$(BUILDTYPE)/kernel > kernel8.dump
 
-qemu: kernel
+qemu: kernel.img
 	qemu-system-aarch64 $(QEMU_FLAGS) -kernel target/aarch64-unknown-none/$(BUILDTYPE)/kernel
 
-qemus: kernel
+qemus: kernel.img
 	qemu-system-aarch64 $(QEMU_FLAGS) -S -kernel target/aarch64-unknown-none/$(BUILDTYPE)/kernel
 
 gdb:

@@ -5,7 +5,7 @@ use tock_registers::{
     registers::{ReadOnly, ReadWrite},
 };
 
-use crate::{console, synchronization::SpinLock};
+use crate::{console, synchronization::{SpinLock, FakeLock}};
 use super::common::MMIODerefWrapper;
 
 register_bitfields! {
@@ -136,13 +136,13 @@ register_structs! {
 type Registers = MMIODerefWrapper<AuxRegisters>;
 
 pub struct MiniUart {
-    inner: SpinLock<MiniUartInner>,
+    inner: FakeLock<MiniUartInner>,
 }
 
 impl MiniUart {
     pub const unsafe fn new(mmio_start_addr: usize) -> Self {
         Self {
-            inner: SpinLock::new(MiniUartInner::new(mmio_start_addr))
+            inner: FakeLock::new(MiniUartInner::new(mmio_start_addr)),
         }
     }
 

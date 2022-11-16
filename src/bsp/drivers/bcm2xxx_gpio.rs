@@ -122,7 +122,7 @@ impl GPIO {
         }
     }
 
-    fn set_func(&mut self, pin: u32, func: u32) {
+    fn set_func(&self, pin: u32, func: u32) {
         let bit_start = (pin * 3) % 30;
 
         let mut selector = self.registers.GPFSEL1.get();
@@ -133,7 +133,7 @@ impl GPIO {
         self.registers.GPFSEL1.set(selector);
     }
 
-    pub fn enable_pin(&mut self, pin: usize) {
+    pub fn enable_pin(&self, pin: usize) {
         self.registers.GPPUD.set(0);
         spin_for_cycles(2000);
         self.registers.GPPUDCLK0.set(1 << (pin % 32));
@@ -142,7 +142,7 @@ impl GPIO {
         self.registers.GPPUDCLK0.set(0);
     }
 
-    pub fn init_mini_uart_pins(&mut self) {
+    pub fn init_mini_uart_pins(&self) {
         self.set_func(14, 2);
         self.set_func(15, 2);
 

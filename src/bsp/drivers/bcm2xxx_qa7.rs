@@ -6,7 +6,7 @@ use tock_registers::{
 };
 
 use super::common::MMIODerefWrapper;
-use crate::synchronization::{SpinLock, interface::Mutex};
+use crate::synchronization::{SpinLock, interface::Mutex, FakeLock};
 
 register_bitfields! {
     u32,
@@ -274,19 +274,24 @@ register_structs! {
 type Registers = MMIODerefWrapper<QA7RegisterBlock>;
 
 pub struct QA7Registers {
-    inner: SpinLock<QA7RegistersInner>,
+    inner: FakeLock<QA7RegistersInner>,
 }
 
 impl QA7Registers {
     pub const unsafe fn new(mmio_start_addr: usize) -> Self {
         Self {
-            inner: SpinLock::new(QA7RegistersInner::new(mmio_start_addr))
+            inner: FakeLock::new(QA7RegistersInner::new(mmio_start_addr))
         }
     }
 
     pub fn init_core_timer(&self, core: u8, freq_divider: u64) {
         let mut qa7 = self.inner.lock().unwrap();
         qa7.init_core_timer(core, freq_divider);
+    }
+
+    pub fn get_incoming_irqs(&self, core: u8) -> u32 {
+        let qa7 = self.inner.lock().unwrap();
+        qa7.get_incoming_irqs(core)
     }
 
     pub fn read_clear_mailbox(&self, core: u8, mailbox: usize) -> u32 {
@@ -311,43 +316,55 @@ impl QA7RegistersInner {
         let timer = freq / freq_divider;
         CNTP_TVAL_EL0.set(timer);
         CNTP_CTL_EL0.write(CNTP_CTL_EL0::ENABLE::SET);
+        
         match core {
             0 => {
                 self.registers.Core0TimerInterruptControl.write(
-                    CoreTimerInterruptControl::nCNTPSIRQ::IRQEnabled +
-                    CoreTimerInterruptControl::nCNTPNSIRQ::IRQEnabled +
-                    CoreTimerInterruptControl::nCNTHPIRQ::IRQEnabled +
-                    CoreTimerInterruptControl::nCNTVIRQ::IRQEnabled
+                    //CoreTimerInterruptControl::nCNTPSIRQ::IRQEnabled //+
+                    CoreTimerInterruptControl::nCNTPNSIRQ::IRQEnabled //+
+                    //CoreTimerInterruptControl::nCNTHPIRQ::IRQEnabled //+
+                    //CoreTimerInterruptControl::nCNTVIRQ::IRQEnabled
                 );
             }
             1 => {
                 self.registers.Core1TimerInterruptControl.write(
-                    CoreTimerInterruptControl::nCNTPSIRQ::IRQEnabled +
-                    CoreTimerInterruptControl::nCNTPNSIRQ::IRQEnabled +
-                    CoreTimerInterruptControl::nCNTHPIRQ::IRQEnabled +
-                    CoreTimerInterruptControl::nCNTVIRQ::IRQEnabled
+                    //CoreTimerInterruptControl::nCNTPSIRQ::IRQEnabled //+
+                    CoreTimerInterruptControl::nCNTPNSIRQ::IRQEnabled //+
+                    //CoreTimerInterruptControl::nCNTHPIRQ::IRQEnabled //+
+                    //CoreTimerInterruptControl::nCNTVIRQ::IRQEnabled
                 );
             }
             2 => {
                 self.registers.Core2TimerInterruptControl.write(
-                    CoreTimerInterruptControl::nCNTPSIRQ::IRQEnabled +
-                    CoreTimerInterruptControl::nCNTPNSIRQ::IRQEnabled +
-                    CoreTimerInterruptControl::nCNTHPIRQ::IRQEnabled +
-                    CoreTimerInterruptControl::nCNTVIRQ::IRQEnabled
+                    //CoreTimerInterruptControl::nCNTPSIRQ::IRQEnabled //+
+                    CoreTimerInterruptControl::nCNTPNSIRQ::IRQEnabled //+
+                    //CoreTimerInterruptControl::nCNTHPIRQ::IRQEnabled //+
+                    //CoreTimerInterruptControl::nCNTVIRQ::IRQEnabled
                 );
             }
             3 => {
                 self.registers.Core3TimerInterruptControl.write(
-                    CoreTimerInterruptControl::nCNTPSIRQ::IRQEnabled +
-                    CoreTimerInterruptControl::nCNTPNSIRQ::IRQEnabled +
-                    CoreTimerInterruptControl::nCNTHPIRQ::IRQEnabled +
-                    CoreTimerInterruptControl::nCNTVIRQ::IRQEnabled
+                    //CoreTimerInterruptControl::nCNTPSIRQ::IRQEnabled //+
+                    CoreTimerInterruptControl::nCNTPNSIRQ::IRQEnabled //+
+                    //CoreTimerInterruptControl::nCNTHPIRQ::IRQEnabled //+
+                    //CoreTimerInterruptControl::nCNTVIRQ::IRQEnabled
                 );
             }
             _ => {
                 panic!("Can't enable core timer on invalid core")
             }
         }
+    }
+
+    fn get_incoming_irqs(&self, core: u8) -> u32 {
+        match core {
+            0 => self.registers.Core0IRQSource.get(),
+            1 => self.registers.Core1IRQSource.get(),
+            2 => self.registers.Core2IRQSource.get(),
+            3 => self.registers.Core3IRQSource.get(),
+            _ => panic!("Invalid core!")
+        }
+
     }
 
     fn read_clear_mailbox(&mut self, core: u8, mailbox: usize) -> u32 {

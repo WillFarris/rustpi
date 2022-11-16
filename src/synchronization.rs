@@ -1,5 +1,7 @@
 use core::cell::UnsafeCell;
 
+use crate::utils;
+
 pub mod interface {
     use core::ops::{Deref, DerefMut};
 
@@ -52,7 +54,7 @@ pub mod interface {
 }
 
 pub struct SpinLock<T> where T: ?Sized {
-    guard: u8,
+    guard: u64,
     data: UnsafeCell<T>,
 }
 
@@ -64,6 +66,14 @@ impl<T> SpinLock<T> {
         Self {
             guard: 0,
             data: UnsafeCell::new(data),
+        }
+    }
+
+    pub fn map_in_page_table(&self) {
+        let self_addr = self as *const SpinLock<T> as usize;
+        crate::println!("{}", self_addr);
+        if self_addr == (self_addr & !0xFFFF) {
+
         }
     }
 }
@@ -80,33 +90,16 @@ impl<T> interface::Mutex for SpinLock<T> {
     */
 
     fn lock(&self) -> Result<interface::MutexGuard<Self>, ()> {
-        
-        let one = 1;
-        let mut guard = 0;
-        let mut set_result = 0;
-        while guard != 0 && set_result != 0 {
-            unsafe {
-                core::arch::asm!("
-                    ldaxrb {g:w}, [{x}]
-                    stlxrb {s:w}, {o:w}, [{x}]
-                ",
-                g = out(reg) guard,
-                s = out(reg) set_result,
-                o = in(reg) one,
-                x = in(reg) (&self.guard as *const u8 as usize));
-            }
+        unsafe {
+            utils::u64_lock_acquire_asm(&self.guard as *const u64);
         }
-
         Ok(interface::MutexGuard::new(self))
     }
 
     fn unlock(&self) -> Result<(), ()> {
         unsafe {
-            core::arch::asm!("
-                stlr   wzr, [{x}]
-            ", x = in(reg) (&self.guard as *const u8 as usize));
+            utils::u64_lock_release_asm(&self.guard as *const u64);
         }
-        
         Ok(())
     }
 
@@ -117,4 +110,43 @@ impl<T> interface::Mutex for SpinLock<T> {
     unsafe fn get_data_mut(&self) -> &mut Self::Data {
         &mut *self.data.get()
     }
+
+}
+
+
+pub struct FakeLock<T> where T: ?Sized {
+    data: UnsafeCell<T>,
+}
+
+unsafe impl<T> Send for FakeLock<T> where T: ?Sized + Send {}
+unsafe impl<T> Sync for FakeLock<T> where T: ?Sized + Send {}
+
+impl<T> FakeLock<T> {
+    pub const fn new(data: T) -> Self {
+        Self {
+            data: UnsafeCell::new(data),
+        }
+    }
+}
+
+impl<T> interface::Mutex for FakeLock<T> {
+    type Data = T;
+
+
+    fn lock(&self) -> Result<interface::MutexGuard<Self>, ()> {
+        Ok(interface::MutexGuard::new(self))
+    }
+
+    fn unlock(&self) -> Result<(), ()> {
+        Ok(())
+    }
+
+    unsafe fn get_data(&self) -> &Self::Data {
+        & *self.data.get()
+    }
+
+    unsafe fn get_data_mut(&self) -> &mut Self::Data {
+        &mut *self.data.get()
+    }
+
 }

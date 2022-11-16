@@ -1,8 +1,8 @@
 use core::arch::global_asm;
-use aarch64_cpu::registers::VBAR_EL1;
-use tock_registers::interfaces::Writeable;
+use aarch64_cpu::registers::{VBAR_EL1, CNTPCT_EL0, CNTFRQ_EL0, CNTP_TVAL_EL0};
+use tock_registers::interfaces::{Writeable, Readable};
 
-use crate::println;
+use crate::{println, utils::get_core, bsp::raspberrypi::QA7_REGS};
 
 global_asm!(include_str!("exception.s"));
 
@@ -34,11 +34,16 @@ pub fn show_invalid_entry_message(exception_type: usize, esr_el1: usize, elr_el1
     loop {}
 }
 
-pub unsafe fn init_vectors(addr: u64) {
-    VBAR_EL1.set(addr);
-}
-
 #[no_mangle]
 pub unsafe fn handle_irq() {
-    println!("Got IRQ");
+    
+    let core = get_core();
+    let core_irq_source = QA7_REGS.get_incoming_irqs(core);
+
+    if core_irq_source & 0b10 != 0 {
+        println!("[core {}] Timer fired!", core);
+        let freq = CNTFRQ_EL0.get();
+        CNTP_TVAL_EL0.set(freq);
+    }
+    
 }
