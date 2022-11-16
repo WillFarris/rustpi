@@ -22,10 +22,9 @@ pub fn kernel_main() -> ! {
     bsp::raspberrypi::uart_init();
     println!("\n[core {}] Raspberry Pi 3 in EL{}", get_core(), get_el());
 
-    unsafe {
-        core::arch::asm!("msr daifclr, #2");
-        bsp::raspberrypi::QA7_REGS.init_core_timer(0, 1);
-    }
+    exception::irq_enable();
+    bsp::raspberrypi::QA7_REGS.init_core_timer(0, 1);
+    
     println!("[core {}] Initialized core timer", get_core());
 
     loop {

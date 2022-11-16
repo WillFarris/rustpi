@@ -1,7 +1,7 @@
 use core::arch::global_asm;
 use aarch64_cpu::registers::*;
 
-use crate::{get_core, bsp::raspberrypi::QA7_REGS};
+use crate::get_core;
 
 #[no_mangle]
 static SCTLR_INIT_VAL: u64 = SCTLR_EL1::EE::LittleEndian.value | SCTLR_EL1::NAA::Disable.value | SCTLR_EL1::I::NonCacheable.value | SCTLR_EL1::C::NonCacheable.value | SCTLR_EL1::M::Disable.value;
@@ -18,7 +18,6 @@ global_asm!(include_str!("start.s"));
 
 extern "C" {
     fn irq_init_vectors();
-    fn irq_enable();
     fn slave_core_sleep();
 }
 
@@ -31,7 +30,6 @@ pub fn _hang() -> ! {
 #[no_mangle]
 pub unsafe extern "C" fn _el1_rust_entry() -> ! {
     irq_init_vectors();
-    irq_enable();
 
     if get_core() != 0 {
         slave_core_sleep()

@@ -36,7 +36,7 @@ pub fn show_invalid_entry_message(exception_type: usize, esr_el1: usize, elr_el1
 
 #[no_mangle]
 pub unsafe fn handle_irq() {
-    
+    irq_disable();
     let core = get_core();
     let core_irq_source = QA7_REGS.get_incoming_irqs(core);
 
@@ -46,4 +46,16 @@ pub unsafe fn handle_irq() {
         CNTP_TVAL_EL0.set(freq);
     }
     
+}
+
+pub fn irq_enable() {
+    unsafe {
+        core::arch::asm!("msr daifclr, #2");
+    }
+}
+
+pub fn irq_disable() {
+    unsafe {
+        core::arch::asm!("msr daifset, #2");
+    }
 }
