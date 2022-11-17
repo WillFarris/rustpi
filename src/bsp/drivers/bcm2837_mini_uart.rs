@@ -5,7 +5,7 @@ use tock_registers::{
     registers::{ReadOnly, ReadWrite},
 };
 
-use crate::{console, synchronization::{SpinLock, FakeLock}};
+use crate::{console, synchronization::FakeLock};
 use super::common::MMIODerefWrapper;
 
 register_bitfields! {

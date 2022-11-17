@@ -1,5 +1,5 @@
 use core::arch::global_asm;
-use aarch64_cpu::registers::{VBAR_EL1, CNTPCT_EL0, CNTFRQ_EL0, CNTP_TVAL_EL0};
+use aarch64_cpu::registers::{CNTFRQ_EL0, CNTP_TVAL_EL0};
 use tock_registers::interfaces::{Writeable, Readable};
 
 use crate::{println, utils::get_core, bsp::raspberrypi::QA7_REGS};

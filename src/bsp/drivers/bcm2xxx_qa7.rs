@@ -6,7 +6,7 @@ use tock_registers::{
 };
 
 use super::common::MMIODerefWrapper;
-use crate::synchronization::{SpinLock, interface::Mutex, FakeLock};
+use crate::synchronization::{interface::Mutex, FakeLock};
 
 register_bitfields! {
     u32,
@@ -294,9 +294,9 @@ impl QA7Registers {
         qa7.get_incoming_irqs(core)
     }
 
-    pub fn read_clear_mailbox(&self, core: u8, mailbox: usize) -> u32 {
+    pub fn _read_clear_mailbox(&self, core: u8, mailbox: usize) -> u32 {
         let mut qa7 = self.inner.lock().unwrap();
-        qa7.read_clear_mailbox(core, mailbox)
+        qa7._read_clear_mailbox(core, mailbox)
     }
 }
 
@@ -367,7 +367,7 @@ impl QA7RegistersInner {
 
     }
 
-    fn read_clear_mailbox(&mut self, core: u8, mailbox: usize) -> u32 {
+    fn _read_clear_mailbox(&mut self, core: u8, mailbox: usize) -> u32 {
         if core > 3 {
             panic!("Invalid core for Mailbox read: core {} mbox {}", core, mailbox);
         }

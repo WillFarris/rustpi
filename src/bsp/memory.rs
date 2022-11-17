@@ -14,14 +14,14 @@ pub mod mmu {
     }
 
     #[repr(C, align(65536))]
-    struct PageTable {
+    struct TranslationTable {
         lower_level3: [[usize; 8192]; NUM_TABLES],
         higher_level3: [[usize; 8192]; NUM_TABLES],
         lower_level2: [usize; 8192],
         higher_level2: [usize; 8192],
     }
     
-    impl PageTable {
+    impl TranslationTable {
         const fn new() -> Self {
             Self {
                 lower_level3: [[0usize; 8192]; NUM_TABLES],
@@ -69,7 +69,7 @@ pub mod mmu {
     }
 
     #[no_mangle]
-    static mut TRANSLATION_TABLE: PageTable = PageTable::new();
+    static mut TRANSLATION_TABLE: TranslationTable = TranslationTable::new();
 
     pub fn identity_map_table() {
         unsafe {
@@ -136,5 +136,53 @@ pub mod mmu {
 
     }
 
+    
+}
+
+pub mod alloc {
+    use crate::synchronization::{SpinLock, interface::Mutex};
+    use core::alloc::{Allocator, GlobalAlloc};
+    extern "C" {
+        static heap_start: u8;
+        static heap_end: u8;
+    }
+
+    struct KernelAllocator {
+        inner: SpinLock<KernelAllocatorInner>,
+    }
+
+    struct KernelAllocatorInner {
+        map: [u8; 1024],
+    }
+
+    #[global_allocator]
+    static KERNEL_ALLOCATOR: KernelAllocator = KernelAllocator {
+        inner: SpinLock::new(KernelAllocatorInner { map: [0; 1024] })
+    };
+    
+    unsafe impl GlobalAlloc for KernelAllocator {
+        unsafe fn alloc(&self, _layout: core::alloc::Layout) -> *mut u8 {
+            let mut inner = self.inner.lock().unwrap();
+            inner.get_page()
+        }
+
+        unsafe fn dealloc(&self, ptr: *mut u8, layout: core::alloc::Layout) {
+            todo!()
+        }
+    }
+
+    impl KernelAllocatorInner {
+        fn get_page(&mut self) -> *mut u8 {
+            let base_addr = unsafe { &heap_start as *const u8 as usize };
+            for i in 0..1024 {
+                if self.map[i] == 0 {
+                    let addr = (base_addr + 0x1000 * i) as *mut u8;
+                    self.map[i] = 1;
+                    return addr;
+                }
+            }
+            panic!("No available page!");
+        }
+    }
     
 }

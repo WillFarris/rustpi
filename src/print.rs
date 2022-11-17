@@ -1,4 +1,4 @@
-use core::fmt::{self, Write};
+use core::fmt;
 
 //#[doc(hidden)]
 pub fn _print(args: fmt::Arguments) {
