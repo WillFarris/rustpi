@@ -284,9 +284,9 @@ impl QA7Registers {
         }
     }
 
-    pub fn init_core_timer(&self, core: u8, freq_divider: u64) {
+    pub fn init_core_timer(&self, core: u8) {
         let mut qa7 = self.inner.lock().unwrap();
-        qa7.init_core_timer(core, freq_divider);
+        qa7.init_core_timer(core);
     }
 
     pub fn get_incoming_irqs(&self, core: u8) -> u32 {
@@ -311,25 +311,26 @@ impl QA7RegistersInner {
         }
     }
 
-    fn init_core_timer(&mut self, core: u8, freq_divider: u64) {
+    fn init_core_timer(&mut self, core: u8) {
         let freq = CNTFRQ_EL0.get();
-        let timer = freq / freq_divider;
-        CNTP_TVAL_EL0.set(timer);
+        let timer = freq;
+
         CNTP_CTL_EL0.write(CNTP_CTL_EL0::ENABLE::SET);
+        CNTP_TVAL_EL0.set(timer);
         
         match core {
             0 => {
                 self.registers.Core0TimerInterruptControl.write(
-                    //CoreTimerInterruptControl::nCNTPSIRQ::IRQEnabled //+
-                    CoreTimerInterruptControl::nCNTPNSIRQ::IRQEnabled //+
-                    //CoreTimerInterruptControl::nCNTHPIRQ::IRQEnabled //+
-                    //CoreTimerInterruptControl::nCNTVIRQ::IRQEnabled
+                    CoreTimerInterruptControl::nCNTPSIRQ::IRQEnabled +
+                    CoreTimerInterruptControl::nCNTPNSIRQ::IRQEnabled +
+                    CoreTimerInterruptControl::nCNTHPIRQ::IRQEnabled +
+                    CoreTimerInterruptControl::nCNTVIRQ::IRQEnabled
                 );
             }
             1 => {
                 self.registers.Core1TimerInterruptControl.write(
-                    //CoreTimerInterruptControl::nCNTPSIRQ::IRQEnabled //+
-                    CoreTimerInterruptControl::nCNTPNSIRQ::IRQEnabled //+
+                    CoreTimerInterruptControl::nCNTPSIRQ::IRQEnabled //+
+                    //CoreTimerInterruptControl::nCNTPNSIRQ::IRQEnabled //+
                     //CoreTimerInterruptControl::nCNTHPIRQ::IRQEnabled //+
                     //CoreTimerInterruptControl::nCNTVIRQ::IRQEnabled
                 );

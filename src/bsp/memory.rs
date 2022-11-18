@@ -43,7 +43,7 @@ pub mod mmu {
 
                 for j in 0..8192 {
                     let virt_address = (i << 29) + (j << 16);
-                    let mut mair_attr = 1;
+                    let mut mair_attr = 4;
 
                     if virt_address >= PBASE_START && virt_address <= PBASE_END {
                         mair_attr = 0;
@@ -141,7 +141,7 @@ pub mod mmu {
 
 pub mod alloc {
     use crate::synchronization::{SpinLock, interface::Mutex};
-    use core::alloc::{Allocator, GlobalAlloc};
+    use core::alloc::GlobalAlloc;
     extern "C" {
         static heap_start: u8;
         static heap_end: u8;
@@ -156,6 +156,7 @@ pub mod alloc {
     }
 
     #[global_allocator]
+    #[link_section = ".locks"]
     static KERNEL_ALLOCATOR: KernelAllocator = KernelAllocator {
         inner: SpinLock::new(KernelAllocatorInner { map: [0; 1024] })
     };

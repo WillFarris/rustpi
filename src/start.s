@@ -134,7 +134,6 @@ irq_init_vectors:
 .globl u64_lock_acquire_asm
 u64_lock_acquire_asm:
 .p2align 8
-    msr     daifset, 0b0010
     mov     x2, #1
     mrs     x2, mpidr_el1
     and     x2, x2, 0b11
@@ -151,5 +150,4 @@ u64_lock_acquire_asm:
 .globl u64_lock_release_asm
 u64_lock_release_asm:
     stlr    xzr, [x0]
-    msr     daifclr, 0b0010
     ret

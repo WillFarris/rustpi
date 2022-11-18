@@ -30,20 +30,19 @@ const EXCEPTION_ERROR_MESSAGES: [&'static str; 16] = [
 
 #[no_mangle]
 pub fn show_invalid_entry_message(exception_type: usize, esr_el1: usize, elr_el1: usize) {
-    println!("invalid exception: {}, ESR_EL1: {:x}, ELR_EL1: {:x}", EXCEPTION_ERROR_MESSAGES[exception_type], esr_el1, elr_el1);
+    println!("[core {}] invalid exception: {}, ESR_EL1: {:x}, ELR_EL1: {:x}", get_core(), EXCEPTION_ERROR_MESSAGES[exception_type], esr_el1, elr_el1);
     loop {}
 }
 
 #[no_mangle]
 pub unsafe fn handle_irq() {
-    irq_disable();
     let core = get_core();
     let core_irq_source = QA7_REGS.get_incoming_irqs(core);
 
     if core_irq_source & 0b10 != 0 {
-        println!("[core {}] Timer fired!", core);
         let freq = CNTFRQ_EL0.get();
         CNTP_TVAL_EL0.set(freq);
+        println!("[core {}] Timer fired!", core);
     }
     
 }
