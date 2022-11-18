@@ -5,7 +5,7 @@ use tock_registers::{
     registers::{ReadOnly, ReadWrite},
 };
 
-use crate::{console, synchronization::FakeLock};
+use crate::{console, synchronization::{SpinLock, FakeLock}};
 use super::common::MMIODerefWrapper;
 
 register_bitfields! {
@@ -136,13 +136,13 @@ register_structs! {
 type Registers = MMIODerefWrapper<AuxRegisters>;
 
 pub struct MiniUart {
-    inner: FakeLock<MiniUartInner>,
+    inner: SpinLock<MiniUartInner>,
 }
 
 impl MiniUart {
     pub const unsafe fn new(mmio_start_addr: usize) -> Self {
         Self {
-            inner: FakeLock::new(MiniUartInner::new(mmio_start_addr)),
+            inner: SpinLock::new(MiniUartInner::new(mmio_start_addr)),
         }
     }
 
@@ -158,8 +158,15 @@ impl console::interface::Write for MiniUart {
 
     fn write_char(&self, c: char) {
         //self.inner.lock(|inner| inner.write_char(c)).unwrap();
-        let mut data = self.inner.lock().unwrap();
-        data.write_char(c).unwrap();
+        let mut busy = true;
+        while busy {
+            let mut data = self.inner.lock().unwrap();
+            busy = if let Ok(_) = data.write_char(c) {
+                false
+            } else {
+                true
+            }
+        }
     }
 
     fn write_fmt(&self, args: fmt::Arguments) -> fmt::Result {
@@ -171,13 +178,17 @@ impl console::interface::Write for MiniUart {
     fn flush(&self) {
         //todo!()
     }
+    
 }
 
 impl console::interface::Read for MiniUart {
     fn read_char(&self) -> char {
-        //self.inner.lock(|inner| inner.read_char())
-        let data = self.inner.lock().unwrap();
-        data.read_char()
+        let mut c = None;
+        while c == None {
+            let data = self.inner.lock().unwrap();
+            c = data.read_char();
+        }
+        c.unwrap_or('x')
     }
 
     fn clear_rx(&self) {
@@ -221,11 +232,11 @@ impl MiniUartInner {
         self.registers.MU_IO.set(c as u32);
     }
     
-    pub fn read_char(&self) -> char {
-        while self.registers.MU_LSR.matches_all(MU_LSR::DATAREADY::CLEAR) {
-            aarch64_cpu::asm::nop();
+    pub fn read_char(&self) -> Option<char> {
+        if self.registers.MU_LSR.matches_all(MU_LSR::DATAREADY::CLEAR) {
+            return None;
         }
-        char::from_u32(self.registers.MU_IO.read(MU_IO::BYTE)).unwrap()
+        Some(char::from_u32(self.registers.MU_IO.read(MU_IO::BYTE)).unwrap())
     }
 }
 
