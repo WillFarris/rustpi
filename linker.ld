@@ -21,8 +21,9 @@ SECTIONS
 		 *(.bss*)
 	}
 	bss_end = .;
-    . = ALIGN(65536);
+    
     .locks : {
+        . = ALIGN(65536);
         LOCKS_START = .;
         *(.locks*)
         LOCKS_END = .;
@@ -84,8 +85,8 @@ SECTIONS
         __stack_end_core3__ = .;    
     }
 
-    . = ALIGN(65536);
     .heap (NOLOAD) : {
+        . = ALIGN(65536);
         heap_start = .;
         . = . + 0x1000 * 1024;
         heap_end = .;

@@ -136,13 +136,13 @@ register_structs! {
 type Registers = MMIODerefWrapper<AuxRegisters>;
 
 pub struct MiniUart {
-    inner: SpinLock<MiniUartInner>,
+    inner: FakeLock<MiniUartInner>,
 }
 
 impl MiniUart {
     pub const unsafe fn new(mmio_start_addr: usize) -> Self {
         Self {
-            inner: SpinLock::new(MiniUartInner::new(mmio_start_addr)),
+            inner: FakeLock::new(MiniUartInner::new(mmio_start_addr)),
         }
     }
 
@@ -157,7 +157,6 @@ use crate::synchronization::interface::Mutex;
 impl console::interface::Write for MiniUart {
 
     fn write_char(&self, c: char) {
-        //self.inner.lock(|inner| inner.write_char(c)).unwrap();
         let mut busy = true;
         while busy {
             let mut data = self.inner.lock().unwrap();
@@ -170,7 +169,6 @@ impl console::interface::Write for MiniUart {
     }
 
     fn write_fmt(&self, args: fmt::Arguments) -> fmt::Result {
-        //self.inner.lock(|inner| fmt::Write::write_fmt(inner, args))
         let mut data = self.inner.lock().unwrap();
         fmt::Write::write_fmt(&mut *data, args)
     }
@@ -186,7 +184,7 @@ impl console::interface::Read for MiniUart {
         let mut c = None;
         while c == None {
             let data = self.inner.lock().unwrap();
-            c = data.read_char();
+            c = data.read_char(BlockingMode::Blocking);
         }
         c.unwrap_or('x')
     }
@@ -196,8 +194,13 @@ impl console::interface::Read for MiniUart {
     }
 }
 
-
 impl console::interface::ReadWrite for MiniUart {}
+
+#[derive(PartialEq)]
+enum BlockingMode {
+    Blocking,
+    NonBlocking
+}
 
 struct MiniUartInner {
     registers: Registers
@@ -210,7 +213,6 @@ impl MiniUartInner {
         }
     }
 
-    #[no_mangle]
     pub fn init(&mut self) {
         self.registers.AUXENB.write(AUXENB::MiniUART::Enabled);
         self.registers.MU_CNTL.set(0);
@@ -221,9 +223,11 @@ impl MiniUartInner {
         self.registers.MU_CNTL.write(MU_CNTL::RXEN::SET + MU_CNTL::TXEN::SET + MU_CNTL::RXAUTOEN::SET + MU_CNTL::RXAUTOEN::SET);
     }
 
-    pub fn putc(&self, c: char) {
+    
+
+    pub fn put_char(&self, c: char) {
         if c == '\n' {
-            self.putc('\r');
+            self.put_char('\r');
         }
 
         while !self.registers.MU_LSR.matches_all(MU_LSR::TXEMPTY::SET) {
@@ -231,10 +235,18 @@ impl MiniUartInner {
         }
         self.registers.MU_IO.set(c as u32);
     }
+
     
-    pub fn read_char(&self) -> Option<char> {
+    
+    pub fn read_char(&self, blocking_mode: BlockingMode) -> Option<char> {
         if self.registers.MU_LSR.matches_all(MU_LSR::DATAREADY::CLEAR) {
-            return None;
+            if blocking_mode == BlockingMode::NonBlocking {
+                return None;
+            }
+
+            while self.registers.MU_LSR.matches_all(MU_LSR::DATAREADY::CLEAR) {
+                aarch64_cpu::asm::nop();
+            }
         }
         Some(char::from_u32(self.registers.MU_IO.read(MU_IO::BYTE)).unwrap())
     }
@@ -243,7 +255,7 @@ impl MiniUartInner {
 impl fmt::Write for MiniUartInner {
     fn write_str(&mut self, s: &str) -> fmt::Result {
         for c in s.chars() {
-            self.putc(c);
+            self.put_char(c);
         }
         Ok(())
     }

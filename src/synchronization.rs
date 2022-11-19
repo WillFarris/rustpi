@@ -8,7 +8,6 @@ pub mod interface {
     pub trait Mutex {
         type Data;
 
-        //fn lock<'a, R>(&'a self, f: impl FnOnce(&'a mut Self::Data) -> R) -> R;
         fn lock(&self) -> Result<MutexGuard<Self>, ()>;
         fn unlock(&self) -> Result<(), ()>;
         unsafe fn get_data(&self) -> &Self::Data;
@@ -72,14 +71,6 @@ impl<T> SpinLock<T> {
 
 impl<T> interface::Mutex for SpinLock<T> {
     type Data = T;
-
-    /*
-    fn lock<'a, R>(&'a self, f: impl FnOnce(&'a mut Self::Data) -> R) -> R {
-        let data = unsafe {&mut *self.data.get() };
-
-        f(data)
-    }
-    */
 
     fn lock(&self) -> Result<interface::MutexGuard<Self>, ()> {
         unsafe {

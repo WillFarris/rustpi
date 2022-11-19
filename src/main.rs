@@ -17,8 +17,6 @@ extern crate alloc;
 
 use utils::{get_el, get_core};
 
-use crate::bsp::raspberrypi::SYSTEM_TIMER;
-
 extern "C" {
     fn core_execute(core: u8, f: fn());
 }
@@ -28,6 +26,26 @@ pub fn kernel_main() -> ! {
     bsp::raspberrypi::uart_init();
     println!("\n[core {}] Raspberry Pi 3 in EL{}", get_core(), get_el());
 
+    bsp::raspberrypi::QA7_REGS.init_core_timer();
+    exception::irq_enable();
+
+    scheduler::PTABLE.init_core();
+
+    unsafe {
+        for i in 0..3 {
+            core_execute(i+1, || {
+                bsp::memory::mmu::init();
+                scheduler::PTABLE.init_core();
+                bsp::raspberrypi::SYSTEM_TIMER.wait_for_ms(get_core() as usize * 100);
+                bsp::raspberrypi::QA7_REGS.init_core_timer();
+                exception::irq_enable();
+            });
+        }
+    }
+
+    bsp::raspberrypi::SYSTEM_TIMER.wait_for_ms(100);
+
+    scheduler::PTABLE.print();
     
     loop {
         let c = console::console().read_char();
