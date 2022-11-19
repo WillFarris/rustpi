@@ -68,14 +68,6 @@ impl<T> SpinLock<T> {
             data: UnsafeCell::new(data),
         }
     }
-
-    pub fn map_in_page_table(&self) {
-        let self_addr = self as *const SpinLock<T> as usize;
-        crate::println!("{}", self_addr);
-        if self_addr == (self_addr & !0xFFFF) {
-
-        }
-    }
 }
 
 impl<T> interface::Mutex for SpinLock<T> {
