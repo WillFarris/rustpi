@@ -40,6 +40,15 @@ impl CPUContext {
             pc: 0,
         }
     }
+    
+    fn set_pc(&mut self, pc: u64) {
+        self.pc = pc;
+    }
+
+    fn set_sp(&mut self, sp: u64) {
+        self.sp = sp;
+    }
+
 }
 
 #[derive(Copy, Clone, Debug)]
@@ -92,10 +101,10 @@ impl PTable {
         table.init_core_inner(get_core());
     }
 
-    /*pub fn create_proc(&self, f: fn()) {
+    pub fn new_process(&self, name: &'static str, f: fn()) {
         let mut table = self.inner.lock().unwrap();
-        table.create_proc_inner();
-    }*/
+        table.new_process_inner(name, f);
+    }
 
     pub fn print(&self) {
         let table = self.inner.lock().unwrap();
@@ -131,16 +140,28 @@ impl PTableInner {
         self.num_procs += 1;
     }
 
-    /*fn create_proc_inner(&mut self, f: fn()) {
-        let new_proc = Box::new(Process {
-            ctx: CPUContext::new_process(f),
-            state: todo!(),
-            name: todo!(),
-            pid: todo!(),
-            core_using: todo!(),
-            next: todo!(),
+    fn new_process_inner(&mut self, name: &'static str, f: fn()) {
+        let mut new_proc = Box::new(Process {
+            ctx: CPUContext::empty(),
+            state: PState::TaskRunning,
+            name,
+            pid: self.num_procs + 1,
+            core_using: 0xF,
+            next: None,
         });
-    }*/
+        new_proc.ctx.set_pc(f as u64);
+        crate::println!("Process {} created at address {:x}, pc={:x} sp={:x}", name, &new_proc as *const Box<Process> as u64, new_proc.ctx.pc, new_proc.ctx.sp);
+        //new_proc.ctx.set_sp();
+
+        self.num_procs += 1;
+
+        if let Some(_) = &self.head {
+
+        } else {
+            self.head = Some(new_proc);
+        }
+
+    }
 
     fn print(&self) {
         for i in 0..4 {
