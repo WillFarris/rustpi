@@ -12,11 +12,19 @@ extern "C" {
 }
 
 pub fn get_core() -> u8 {
-    unsafe {get_core_asm()}
+    let mut core = 0;
+    unsafe {
+        core::arch::asm!("mrs {}, mpidr_el1", out(reg) core)
+    }
+    core & 0b11
 }
 
 pub fn get_el() -> u8 {
-    unsafe {get_el_asm()}
+    let mut el = 0;
+    unsafe {
+        core::arch::asm!("mrs {}, CurrentEL", out(reg) el)
+    }
+    (el >> 2) & 0b11
 }
 
 pub fn _sys_timer_sleep_ms(ms: u64) {

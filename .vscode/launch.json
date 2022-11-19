@@ -1,0 +1,19 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "gdb",
+            "request": "attach",
+            "name": "Attach to gdbserver",
+            "executable": "target/aarch64-unknown-none/debug/kernel",
+            "target": "localhost:1234",
+            "remote": true,
+            "stopAtEntry": false,
+            "cwd": "${workspaceRoot}", 
+            "gdbpath": "aarch64-linux-gnu-gdb",
+            "autorun": [
+            ]
+        }
+        
+    ]
+}

@@ -104,19 +104,6 @@ core_execute:
     dmb     sy
     ret
 
-.globl get_el_asm
-get_el_asm:
-    mrs     x0, CurrentEL
-    lsr     x0, x0, #2
-    and     x0, x0, 0b11
-    ret
-
-.globl get_core_asm
-get_core_asm:
-    mrs     x0, mpidr_el1
-    and     x0, x0, 0b11
-    ret
-
 .globl memzero
 memzero:
     str     xzr, [x0], #8
