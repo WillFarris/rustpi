@@ -284,9 +284,9 @@ impl QA7Registers {
         }
     }
 
-    pub fn init_core_timer(&self, core: u8) {
+    pub fn init_core_timer(&self) {
         let mut qa7 = self.inner.lock().unwrap();
-        qa7.init_core_timer(core);
+        qa7.init_core_timer();
     }
 
     pub fn get_incoming_irqs(&self, core: u8) -> u32 {
@@ -311,12 +311,14 @@ impl QA7RegistersInner {
         }
     }
 
-    fn init_core_timer(&mut self, core: u8) {
+    fn init_core_timer(&mut self) {
+        let core = crate::utils::get_core();
         let freq = CNTFRQ_EL0.get();
         let timer = freq;
 
-        CNTP_CTL_EL0.write(CNTP_CTL_EL0::ENABLE::SET);
         CNTP_TVAL_EL0.set(timer);
+        CNTP_CTL_EL0.write(CNTP_CTL_EL0::ENABLE::SET);
+        
         
         match core {
             0 => {
@@ -326,31 +328,31 @@ impl QA7RegistersInner {
                     CoreTimerInterruptControl::nCNTHPIRQ::IRQEnabled +
                     CoreTimerInterruptControl::nCNTVIRQ::IRQEnabled
                 );
-            }
+            },
             1 => {
                 self.registers.Core1TimerInterruptControl.write(
-                    CoreTimerInterruptControl::nCNTPSIRQ::IRQEnabled //+
-                    //CoreTimerInterruptControl::nCNTPNSIRQ::IRQEnabled //+
-                    //CoreTimerInterruptControl::nCNTHPIRQ::IRQEnabled //+
-                    //CoreTimerInterruptControl::nCNTVIRQ::IRQEnabled
+                    CoreTimerInterruptControl::nCNTPSIRQ::IRQEnabled +
+                    CoreTimerInterruptControl::nCNTPNSIRQ::IRQEnabled +
+                    CoreTimerInterruptControl::nCNTHPIRQ::IRQEnabled +
+                    CoreTimerInterruptControl::nCNTVIRQ::IRQEnabled
                 );
-            }
+            },
             2 => {
                 self.registers.Core2TimerInterruptControl.write(
-                    //CoreTimerInterruptControl::nCNTPSIRQ::IRQEnabled //+
-                    CoreTimerInterruptControl::nCNTPNSIRQ::IRQEnabled //+
-                    //CoreTimerInterruptControl::nCNTHPIRQ::IRQEnabled //+
-                    //CoreTimerInterruptControl::nCNTVIRQ::IRQEnabled
+                    CoreTimerInterruptControl::nCNTPSIRQ::IRQEnabled +
+                    CoreTimerInterruptControl::nCNTPNSIRQ::IRQEnabled +
+                    CoreTimerInterruptControl::nCNTHPIRQ::IRQEnabled +
+                    CoreTimerInterruptControl::nCNTVIRQ::IRQEnabled
                 );
-            }
+            },
             3 => {
                 self.registers.Core3TimerInterruptControl.write(
-                    //CoreTimerInterruptControl::nCNTPSIRQ::IRQEnabled //+
-                    CoreTimerInterruptControl::nCNTPNSIRQ::IRQEnabled //+
-                    //CoreTimerInterruptControl::nCNTHPIRQ::IRQEnabled //+
-                    //CoreTimerInterruptControl::nCNTVIRQ::IRQEnabled
+                    CoreTimerInterruptControl::nCNTPSIRQ::IRQEnabled +
+                    CoreTimerInterruptControl::nCNTPNSIRQ::IRQEnabled +
+                    CoreTimerInterruptControl::nCNTHPIRQ::IRQEnabled +
+                    CoreTimerInterruptControl::nCNTVIRQ::IRQEnabled
                 );
-            }
+            },
             _ => {
                 panic!("Can't enable core timer on invalid core")
             }
