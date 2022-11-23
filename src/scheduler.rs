@@ -1,8 +1,39 @@
-use crate::{utils::get_core, synchronization::{SpinLock, interface::Mutex}};
+use crate::{utils::get_core, synchronization::{SpinLock, interface::Mutex}, exception};
 use alloc::boxed::Box;
 
 #[link_section = ".locks"]
 pub static PTABLE: PTable = PTable::new();
+
+
+fn schedule_tail() {
+    /*
+    __asm volatile ("dsb sy");
+    release(ptable.lock);
+    irq_enable();
+    enable_preempt();
+    */
+
+
+    PTABLE.unlock();
+    crate::exception::irq_enable();
+
+
+}
+
+fn ret_from_fork() {
+    /*
+        bl schedule_tail
+        mov x0, x20
+        mov x1, x21
+        blr x19
+        bl exit
+    */
+    schedule_tail();
+    unsafe {
+        core::arch::asm!("blr x19");
+    }
+    loop {}
+}
 
 #[repr(C, align(16))]
 #[derive(Copy, Clone, Debug)]
@@ -41,6 +72,10 @@ impl CPUContext {
         }
     }
     
+    fn set_entry(&mut self, entry: u64) {
+        self.x19 = entry;
+    }
+    
     fn set_pc(&mut self, pc: u64) {
         self.pc = pc;
     }
@@ -51,7 +86,7 @@ impl CPUContext {
 
 }
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 enum PState {
     TaskUnused,
     TaskSleep,
@@ -67,7 +102,7 @@ struct Process {
     state: PState,
     name: &'static str,
     pid: usize,
-    core_using: u8,
+    core_using: Option<u8>,
     next: Option<Box<Process>>,
 }
 
@@ -78,23 +113,25 @@ impl Process {
             state: PState::TaskUnused,
             name: "",
             pid: !0,
-            core_using: !0,
+            core_using: None,
             next: None
         }
     }
 }
 
-trait LinkedList<T> {
-  fn add(&mut self, item: T);
+trait ProcessList<T> {
+  fn add_proc(&mut self, item: T);
 }
 
-impl LinkedList<Box<Process>> for Option<Box<Process>> {
-  fn add(&mut self, item: Box<Process>) {
+impl ProcessList<Box<Process>> for Option<Box<Process>> {
+
+  fn add_proc(&mut self, item: Box<Process>) {
     match *self {
-      Some(ref mut proc) => proc.next.add(item),
+      Some(ref mut proc) => proc.next.add_proc(item),
       None => *self = Some(item),
     }
   }
+
 }
 
 pub struct PTable {
@@ -118,13 +155,19 @@ impl PTable {
         table.new_process_inner(name, f);
     }
 
+    pub fn schedule(&self) {
+        exception::irq_disable();
+        let mut table = self.inner.lock().unwrap();
+        table.schedule_inner();
+    }
+
     pub fn print(&self) {
         let table = self.inner.lock().unwrap();
         table.print();
     }
     
-    pub fn unlock(& self) {
-      self.inner.unlock();
+    fn unlock(& self) {
+      self.inner.unlock().unwrap();
     }
 }
 
@@ -142,36 +185,6 @@ impl PTableInner {
             running: [None, None, None, None],
         }
     }
-    
-    fn schedule_tail() {
-      /*
-      __asm volatile ("dsb sy");
-    release(ptable.lock);
-    irq_enable();
-    enable_preempt();
-      */
-      //PTABLE.unlock();
-      crate::exception::irq_enable();
-      
-      
-    }
-    
-    fn ret_from_fork(&self, prev: &Process, next: &Process) {
-      /*
-        bl schedule_tail
-        mov x0, x20
-        mov x1, x21
-        blr x19
-        bl exit
-      */
-      //self.schedule_tail();
-      unsafe {
-        core::arch::asm!("
-          mov x0, x0
-        ");
-      }
-      
-    }
 
     fn init_core_inner(&mut self, core: u8) {
         let init_proc = Box::new(Process {
@@ -179,7 +192,7 @@ impl PTableInner {
             state: PState::TaskRunning,
             name: "kthread",
             pid: self.num_procs + 1,
-            core_using: core,
+            core_using: Some(core),
             next: None,
         });
         self.running[core as usize] = Some(init_proc);
@@ -192,32 +205,47 @@ impl PTableInner {
             state: PState::TaskRunning,
             name,
             pid: self.num_procs + 1,
-            core_using: 0xF,
+            core_using: None,
             next: None,
         });
-        let sp = (&new_proc.ctx.sp as *const u64 as u64& !0xFFFF) + 4096;
-        //new_proc.ctx.set_entry(f as u64);
-        //new_proc.ctx.set_pc(self.ret_from_fork);
+        let sp = (&new_proc.ctx as *const CPUContext as u64);
+        new_proc.ctx.set_entry(f as u64);
+        new_proc.ctx.set_pc(ret_from_fork as u64);
         new_proc.ctx.set_sp(sp);
         crate::println!("Process {} created at address {:x}, pc={:x} sp={:x}", name, &new_proc as *const Box<Process> as u64, new_proc.ctx.pc, new_proc.ctx.sp);
-        //new_proc.ctx.set_sp();
 
         self.num_procs += 1;
-        self.head.add(new_proc);
+        self.head.add_proc(new_proc);
+    }
+
+    fn schedule_inner(&mut self) {
+        let core = crate::utils::get_core();
+        
+        /*while let Some(mut proc) = self.head.take() {
+            if proc.state == PState::TaskZombie {
+                self.head = proc.next.take();
+                drop(proc);
+            }
+        }*/
+
+        
+
     }
 
     fn print(&self) {
         crate::println!("Currently running:");
         for i in 0..4 {
             if let Some(curproc) = &self.running[i] {
-                crate::println!("{:#?}", curproc);
+                crate::println!("{:#x?}", curproc);
             }
         }
         crate::println!("Waiting to run:");
         let mut cur = &self.head;
         while let Some(curproc) = cur {
-            crate::println!("{:#?}", curproc);
+            crate::println!("{:#x?}", curproc);
             cur = &curproc.next;
         }
     }
 }
+
+

@@ -168,7 +168,8 @@ pub mod alloc {
         }
 
         unsafe fn dealloc(&self, ptr: *mut u8, layout: core::alloc::Layout) {
-            todo!()
+            let mut inner = self.inner.lock().unwrap();
+            inner.free_page(ptr);
         }
     }
 
@@ -183,6 +184,20 @@ pub mod alloc {
                 }
             }
             panic!("No available page!");
+        }
+
+        fn free_page(&mut self, ptr: *const u8) {
+            
+            let base_addr = unsafe { &heap_start as *const u8 as usize };
+            let offset = (ptr as usize - base_addr);
+            let index = offset / 0x1000;
+
+            crate::println!("address: {:x}, offset: {:x}, index: {:x}", ptr as usize, offset, index);
+
+            if self.map[index] == 0 {
+                panic!("Double free error at {:x}", ptr as usize);
+            }
+            self.map[index] = 0;
         }
     }
     

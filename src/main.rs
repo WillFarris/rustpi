@@ -47,7 +47,9 @@ pub fn kernel_main() -> ! {
     
     scheduler::PTABLE.new_process("test", ||{});
 
-    //scheduler::PTABLE.print();
+    scheduler::PTABLE.print();
+
+    scheduler::PTABLE.schedule();
     
     loop {
         let c = console::console().read_char();
