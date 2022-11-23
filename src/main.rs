@@ -44,8 +44,10 @@ pub fn kernel_main() -> ! {
     }
 
     bsp::raspberrypi::SYSTEM_TIMER.wait_for_ms(100);
+    
+    scheduler::PTABLE.new_process("test", ||{});
 
-    scheduler::PTABLE.print();
+    //scheduler::PTABLE.print();
     
     loop {
         let c = console::console().read_char();

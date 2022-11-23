@@ -59,7 +59,6 @@ enum PState {
     TaskZombie,
 }
 
-
 #[repr(align(16))]
 //#[derive(Copy, Clone)]
 #[derive(Debug)]
@@ -83,6 +82,19 @@ impl Process {
             next: None
         }
     }
+}
+
+trait LinkedList<T> {
+  fn add(&mut self, item: T);
+}
+
+impl LinkedList<Box<Process>> for Option<Box<Process>> {
+  fn add(&mut self, item: Box<Process>) {
+    match *self {
+      Some(ref mut proc) => proc.next.add(item),
+      None => *self = Some(item),
+    }
+  }
 }
 
 pub struct PTable {
@@ -110,6 +122,10 @@ impl PTable {
         let table = self.inner.lock().unwrap();
         table.print();
     }
+    
+    pub fn unlock(& self) {
+      self.inner.unlock();
+    }
 }
 
 struct PTableInner {
@@ -125,6 +141,36 @@ impl PTableInner {
             head: None,
             running: [None, None, None, None],
         }
+    }
+    
+    fn schedule_tail() {
+      /*
+      __asm volatile ("dsb sy");
+    release(ptable.lock);
+    irq_enable();
+    enable_preempt();
+      */
+      //PTABLE.unlock();
+      crate::exception::irq_enable();
+      
+      
+    }
+    
+    fn ret_from_fork(&self, prev: &Process, next: &Process) {
+      /*
+        bl schedule_tail
+        mov x0, x20
+        mov x1, x21
+        blr x19
+        bl exit
+      */
+      //self.schedule_tail();
+      unsafe {
+        core::arch::asm!("
+          mov x0, x0
+        ");
+      }
+      
     }
 
     fn init_core_inner(&mut self, core: u8) {
@@ -149,29 +195,29 @@ impl PTableInner {
             core_using: 0xF,
             next: None,
         });
-        new_proc.ctx.set_pc(f as u64);
+        let sp = (&new_proc.ctx.sp as *const u64 as u64& !0xFFFF) + 4096;
+        //new_proc.ctx.set_entry(f as u64);
+        //new_proc.ctx.set_pc(self.ret_from_fork);
+        new_proc.ctx.set_sp(sp);
         crate::println!("Process {} created at address {:x}, pc={:x} sp={:x}", name, &new_proc as *const Box<Process> as u64, new_proc.ctx.pc, new_proc.ctx.sp);
         //new_proc.ctx.set_sp();
 
         self.num_procs += 1;
-
-        if let Some(_) = &self.head {
-
-        } else {
-            self.head = Some(new_proc);
-        }
-
+        self.head.add(new_proc);
     }
 
     fn print(&self) {
+        crate::println!("Currently running:");
         for i in 0..4 {
             if let Some(curproc) = &self.running[i] {
-                crate::println!("{:?}", curproc);
+                crate::println!("{:#?}", curproc);
             }
         }
-        let cur = &self.head;
+        crate::println!("Waiting to run:");
+        let mut cur = &self.head;
         while let Some(curproc) = cur {
             crate::println!("{:#?}", curproc);
+            cur = &curproc.next;
         }
     }
 }
