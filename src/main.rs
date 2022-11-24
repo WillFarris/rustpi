@@ -37,8 +37,8 @@ pub fn kernel_main() -> ! {
                 bsp::memory::mmu::init();
                 scheduler::PTABLE.init_core();
                 bsp::raspberrypi::SYSTEM_TIMER.wait_for_ms(get_core() as usize * 100);
-                bsp::raspberrypi::QA7_REGS.init_core_timer();
-                exception::irq_enable();
+                //bsp::raspberrypi::QA7_REGS.init_core_timer();
+                //exception::irq_enable();
             });
         }
     }

@@ -4,6 +4,9 @@ use alloc::boxed::Box;
 #[link_section = ".locks"]
 pub static PTABLE: PTable = PTable::new();
 
+extern "C" {
+    fn cpu_switch_to(prev: &CPUContext, next: &CPUContext);
+}
 
 fn schedule_tail() {
     /*
@@ -121,6 +124,7 @@ impl Process {
 
 trait ProcessList<T> {
   fn add_proc(&mut self, item: T);
+  fn remove_zombies(&mut self) -> usize;
 }
 
 impl ProcessList<Box<Process>> for Option<Box<Process>> {
@@ -131,6 +135,24 @@ impl ProcessList<Box<Process>> for Option<Box<Process>> {
       None => *self = Some(item),
     }
   }
+
+  fn remove_zombies(&mut self) -> usize {
+    let mut removed_count = 0;
+    let mut current = self;
+    loop {
+        match current {
+            None => return removed_count,
+            Some(proc) if proc.state == PState::TaskZombie => {
+                *current = proc.next.take();
+                removed_count += 1;
+            },
+            Some(proc) => {
+                current = &mut proc.next;
+            }
+        }
+    }
+  }
+
 
 }
 
@@ -208,7 +230,7 @@ impl PTableInner {
             core_using: None,
             next: None,
         });
-        let sp = (&new_proc.ctx as *const CPUContext as u64);
+        let sp = &new_proc.ctx as *const CPUContext as u64 + 0x800;
         new_proc.ctx.set_entry(f as u64);
         new_proc.ctx.set_pc(ret_from_fork as u64);
         new_proc.ctx.set_sp(sp);
@@ -221,13 +243,23 @@ impl PTableInner {
     fn schedule_inner(&mut self) {
         let core = crate::utils::get_core();
         
-        /*while let Some(mut proc) = self.head.take() {
-            if proc.state == PState::TaskZombie {
-                self.head = proc.next.take();
-                drop(proc);
-            }
-        }*/
+        self.head.remove_zombies();
 
+        if self.head.is_none() {
+            return;
+        }
+
+        let mut next = self.head.take().unwrap();
+        self.head = next.next.take();
+
+        let mut prev = self.running[core as usize].take().unwrap();
+        
+        self.running[core as usize] = Some(next);
+        self.head.add_proc(prev);
+
+        unsafe {
+            //cpu_switch_to(&self.head.get_tail(), &self.running[core as usize].as_ref().unwrap().ctx);
+        }
         
 
     }
@@ -236,13 +268,13 @@ impl PTableInner {
         crate::println!("Currently running:");
         for i in 0..4 {
             if let Some(curproc) = &self.running[i] {
-                crate::println!("{:#x?}", curproc);
+                crate::println!("{:x?}", curproc);
             }
         }
         crate::println!("Waiting to run:");
         let mut cur = &self.head;
         while let Some(curproc) = cur {
-            crate::println!("{:#x?}", curproc);
+            crate::println!("{:x?}", curproc);
             cur = &curproc.next;
         }
     }
