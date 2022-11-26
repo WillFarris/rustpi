@@ -5,7 +5,7 @@ use alloc::boxed::Box;
 pub static PTABLE: PTable = PTable::new();
 
 extern "C" {
-    fn cpu_switch_to(prev: &CPUContext, next: &CPUContext);
+    fn cpu_switch_to(prev: usize, next: usize);
 }
 
 fn schedule_tail() {
@@ -15,12 +15,8 @@ fn schedule_tail() {
     irq_enable();
     enable_preempt();
     */
-
-
     PTABLE.unlock();
     crate::exception::irq_enable();
-
-
 }
 
 fn ret_from_fork() {
@@ -32,10 +28,16 @@ fn ret_from_fork() {
         bl exit
     */
     schedule_tail();
+    let mut ptr: usize = 0;
     unsafe {
-        core::arch::asm!("blr x19");
+        core::arch::asm!("
+        mov {p}, x19
+        blr x19
+        ", p = out(reg) ptr);
     }
+    //crate::println!("fork calling fn at {:x}", ptr);
     loop {}
+    //PTABLE.exit();
 }
 
 #[repr(C, align(16))]
@@ -105,7 +107,6 @@ struct Process {
     state: PState,
     name: &'static str,
     pid: usize,
-    core_using: Option<u8>,
     next: Option<Box<Process>>,
 }
 
@@ -115,8 +116,7 @@ impl Process {
             ctx: CPUContext::empty(),
             state: PState::TaskUnused,
             name: "",
-            pid: !0,
-            core_using: None,
+            pid: 0,
             next: None
         }
     }
@@ -125,6 +125,7 @@ impl Process {
 trait ProcessList<T> {
   fn add_proc(&mut self, item: T);
   fn remove_zombies(&mut self) -> usize;
+  fn get_first(&mut self) -> Self;
 }
 
 impl ProcessList<Box<Process>> for Option<Box<Process>> {
@@ -153,7 +154,13 @@ impl ProcessList<Box<Process>> for Option<Box<Process>> {
     }
   }
 
-
+  fn get_first(&mut self) -> Option<Box<Process>> {
+    let mut first = self.take();
+    if let Some(proc) = &mut first {
+      *self = proc.next.take();
+    }
+    first
+  }
 }
 
 pub struct PTable {
@@ -181,6 +188,15 @@ impl PTable {
         exception::irq_disable();
         let mut table = self.inner.lock().unwrap();
         table.schedule_inner();
+    }
+    
+    fn exit(&self) {
+      crate::exception::irq_disable();
+      {
+        let mut table = self.inner.lock().unwrap();
+        table.exit_current_process();
+      }
+      self.schedule();
     }
 
     pub fn print(&self) {
@@ -214,7 +230,6 @@ impl PTableInner {
             state: PState::TaskRunning,
             name: "kthread",
             pid: self.num_procs + 1,
-            core_using: Some(core),
             next: None,
         });
         self.running[core as usize] = Some(init_proc);
@@ -227,14 +242,13 @@ impl PTableInner {
             state: PState::TaskRunning,
             name,
             pid: self.num_procs + 1,
-            core_using: None,
             next: None,
         });
         let sp = &new_proc.ctx as *const CPUContext as u64 + 0x800;
         new_proc.ctx.set_entry(f as u64);
         new_proc.ctx.set_pc(ret_from_fork as u64);
         new_proc.ctx.set_sp(sp);
-        crate::println!("Process {} created at address {:x}, pc={:x} sp={:x}", name, &new_proc as *const Box<Process> as u64, new_proc.ctx.pc, new_proc.ctx.sp);
+        //crate::println!("Process {} created at address {:x}, pc={:x} sp={:x}", name, &new_proc as *const Box<Process> as u64, new_proc.ctx.pc, new_proc.ctx.sp);
 
         self.num_procs += 1;
         self.head.add_proc(new_proc);
@@ -249,19 +263,34 @@ impl PTableInner {
             return;
         }
 
-        let mut next = self.head.take().unwrap();
-        self.head = next.next.take();
-
-        let mut prev = self.running[core as usize].take().unwrap();
+        let mut next = self.head.get_first().unwrap();
+        let mut prev = self.running[core as usize].get_first().unwrap();
         
+        let prev_ptr = &prev.ctx as *const CPUContext as usize;
+        let next_ptr = &next.ctx as *const CPUContext as usize;
+        
+        crate::println!("switching from {} to {}", prev_ptr, next_ptr);
+        
+        //self.head = next.next.take();
         self.running[core as usize] = Some(next);
         self.head.add_proc(prev);
+        
+        crate::println!("scheduler: head={}, running[{}]={}",
+          &self.head.as_ref().unwrap().
+          ctx as *const CPUContext as usize,
+          core,
+          &self.running[core as usize].as_ref().unwrap().ctx as *const CPUContext as usize,
+        );
 
         unsafe {
-            //cpu_switch_to(&self.head.get_tail(), &self.running[core as usize].as_ref().unwrap().ctx);
+            cpu_switch_to(prev_ptr, next_ptr);
         }
-        
-
+    }
+    
+    fn exit_current_process(&mut self) {
+      if let Some(proc) = &mut self.running[crate::utils::get_core() as usize] {
+        proc.state = PState::TaskZombie;
+      }
     }
 
     fn print(&self) {

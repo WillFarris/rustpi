@@ -45,11 +45,20 @@ pub fn kernel_main() -> ! {
 
     bsp::raspberrypi::SYSTEM_TIMER.wait_for_ms(100);
     
-    scheduler::PTABLE.new_process("test", ||{});
-
+    scheduler::PTABLE.new_process("test", || {
+      println!("\n[core {}] PTABLE while inside a process:", get_core());
+      scheduler::PTABLE.print();
+      scheduler::PTABLE.schedule();
+      loop {}
+    });
+    
+    println!("\nPTABLE before task runs:");
     scheduler::PTABLE.print();
 
     scheduler::PTABLE.schedule();
+    
+    println!("\nPTABLE after task runs:");
+    scheduler::PTABLE.print();
     
     loop {
         let c = console::console().read_char();
