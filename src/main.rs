@@ -37,8 +37,8 @@ pub fn kernel_main() -> ! {
                 bsp::memory::mmu::init();
                 scheduler::PTABLE.init_core();
                 bsp::raspberrypi::SYSTEM_TIMER.wait_for_ms(get_core() as usize * 100);
-                //bsp::raspberrypi::QA7_REGS.init_core_timer();
-                //exception::irq_enable();
+                bsp::raspberrypi::QA7_REGS.init_core_timer();
+                exception::irq_enable();
             });
         }
     }
@@ -48,21 +48,24 @@ pub fn kernel_main() -> ! {
     scheduler::PTABLE.new_process("test", || {
       println!("\n[core {}] PTABLE while inside a process:", get_core());
       scheduler::PTABLE.print();
-      scheduler::PTABLE.schedule();
-      loop {}
+    });
+
+    scheduler::PTABLE.new_process("echo_input", || {
+        loop {
+            let c = console::console().read_char();
+            console::console().write_char(c);
+        }
+    });
+
+    scheduler::PTABLE.new_process("test_loop", || {
+        loop {
+            bsp::raspberrypi::SYSTEM_TIMER.wait_for_ms(1000);
+            println!("[core {}] Timer ding!", get_core());
+        }
     });
     
-    println!("\nPTABLE before task runs:");
-    scheduler::PTABLE.print();
-
-    scheduler::PTABLE.schedule();
-    
-    println!("\nPTABLE after task runs:");
-    scheduler::PTABLE.print();
-    
     loop {
-        let c = console::console().read_char();
-        console::console().write_char(c);
+        scheduler::PTABLE.schedule();
     }
 }
 

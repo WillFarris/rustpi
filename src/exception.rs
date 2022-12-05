@@ -41,8 +41,8 @@ pub unsafe fn handle_irq() {
 
     if core_irq_source & 0b10 != 0 {
         let freq = CNTFRQ_EL0.get();
-        CNTP_TVAL_EL0.set(freq);
-        println!("[core {}] Timer fired!", core);
+        CNTP_TVAL_EL0.set(freq / 100);
+        crate::scheduler::PTABLE.schedule();
     }
     
 }

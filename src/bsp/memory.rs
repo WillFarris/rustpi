@@ -187,12 +187,10 @@ pub mod alloc {
         }
 
         fn free_page(&mut self, ptr: *const u8) {
-            
-            let base_addr = unsafe { &heap_start as *const u8 as usize };
-            let offset = (ptr as usize - base_addr);
-            let index = offset / 0x1000;
 
-            crate::println!("address: {:x}, offset: {:x}, index: {:x}", ptr as usize, offset, index);
+            let base_addr = unsafe { &heap_start as *const u8 as usize };
+            let offset = ptr as usize - base_addr;
+            let index = offset / 0x1000;
 
             if self.map[index] == 0 {
                 panic!("Double free error at {:x}", ptr as usize);

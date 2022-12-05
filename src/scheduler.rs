@@ -8,40 +8,22 @@ extern "C" {
     fn cpu_switch_to(prev: usize, next: usize);
 }
 
-fn schedule_tail() {
-    /*
-    __asm volatile ("dsb sy");
-    release(ptable.lock);
-    irq_enable();
-    enable_preempt();
-    */
+fn ret_from_fork() {
     PTABLE.unlock();
     crate::exception::irq_enable();
-}
-
-fn ret_from_fork() {
-    /*
-        bl schedule_tail
-        mov x0, x20
-        mov x1, x21
-        blr x19
-        bl exit
-    */
-    schedule_tail();
     let mut ptr: usize = 0;
     unsafe {
         core::arch::asm!("
-        mov {p}, x19
-        blr x19
+        mov {p}, x23
         ", p = out(reg) ptr);
     }
-    //crate::println!("fork calling fn at {:x}", ptr);
-    loop {}
-    //PTABLE.exit();
+    let f = unsafe { core::mem::transmute::<usize, fn()>(ptr) };
+    f();
+
+    PTABLE.exit();
 }
 
 #[repr(C, align(16))]
-#[derive(Copy, Clone, Debug)]
 struct CPUContext {
     x19: u64,
     x20: u64,
@@ -78,7 +60,7 @@ impl CPUContext {
     }
     
     fn set_entry(&mut self, entry: u64) {
-        self.x19 = entry;
+        self.x23 = entry;
     }
     
     fn set_pc(&mut self, pc: u64) {
@@ -100,8 +82,6 @@ enum PState {
 }
 
 #[repr(align(16))]
-//#[derive(Copy, Clone)]
-#[derive(Debug)]
 struct Process {
     ctx: CPUContext,
     state: PState,
@@ -196,6 +176,7 @@ impl PTable {
         let mut table = self.inner.lock().unwrap();
         table.exit_current_process();
       }
+      crate::exception::irq_enable();
       self.schedule();
     }
 
@@ -244,11 +225,10 @@ impl PTableInner {
             pid: self.num_procs + 1,
             next: None,
         });
-        let sp = &new_proc.ctx as *const CPUContext as u64 + 0x800;
+        let sp = &new_proc.ctx as *const CPUContext as u64 + 0x1000;
         new_proc.ctx.set_entry(f as u64);
         new_proc.ctx.set_pc(ret_from_fork as u64);
         new_proc.ctx.set_sp(sp);
-        //crate::println!("Process {} created at address {:x}, pc={:x} sp={:x}", name, &new_proc as *const Box<Process> as u64, new_proc.ctx.pc, new_proc.ctx.sp);
 
         self.num_procs += 1;
         self.head.add_proc(new_proc);
@@ -264,23 +244,14 @@ impl PTableInner {
         }
 
         let mut next = self.head.get_first().unwrap();
-        let mut prev = self.running[core as usize].get_first().unwrap();
+        let mut prev = self.running[core as usize].take().unwrap();
         
         let prev_ptr = &prev.ctx as *const CPUContext as usize;
         let next_ptr = &next.ctx as *const CPUContext as usize;
         
-        crate::println!("switching from {} to {}", prev_ptr, next_ptr);
-        
-        //self.head = next.next.take();
         self.running[core as usize] = Some(next);
         self.head.add_proc(prev);
         
-        crate::println!("scheduler: head={}, running[{}]={}",
-          &self.head.as_ref().unwrap().
-          ctx as *const CPUContext as usize,
-          core,
-          &self.running[core as usize].as_ref().unwrap().ctx as *const CPUContext as usize,
-        );
 
         unsafe {
             cpu_switch_to(prev_ptr, next_ptr);
@@ -297,13 +268,13 @@ impl PTableInner {
         crate::println!("Currently running:");
         for i in 0..4 {
             if let Some(curproc) = &self.running[i] {
-                crate::println!("{:x?}", curproc);
+                todo!("print info without requiring Process struct implements Debug")
             }
         }
         crate::println!("Waiting to run:");
         let mut cur = &self.head;
         while let Some(curproc) = cur {
-            crate::println!("{:x?}", curproc);
+            todo!("print info without requiring Process struct implements Debug")
             cur = &curproc.next;
         }
     }
