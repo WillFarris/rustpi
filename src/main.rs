@@ -12,6 +12,7 @@ mod console;
 mod synchronization;
 mod utils;
 mod scheduler;
+mod tasks;
 
 extern crate alloc;
 
@@ -24,7 +25,7 @@ extern "C" {
 #[no_mangle]
 pub fn kernel_main() -> ! {
     bsp::raspberrypi::uart_init();
-    println!("\n[core {}] Raspberry Pi 3 in EL{}", get_core(), get_el());
+    println!("\n[core {}] Raspberry Pi 3 in EL{}\n", get_core(), get_el());
 
     bsp::raspberrypi::QA7_REGS.init_core_timer();
     exception::irq_enable();
@@ -45,24 +46,11 @@ pub fn kernel_main() -> ! {
 
     bsp::raspberrypi::SYSTEM_TIMER.wait_for_ms(100);
     
-    scheduler::PTABLE.new_process("test", || {
-      println!("\n[core {}] PTABLE while inside a process:", get_core());
+    scheduler::PTABLE.new_process("print_ptable", || {
       scheduler::PTABLE.print();
     });
 
-    scheduler::PTABLE.new_process("echo_input", || {
-        loop {
-            let c = console::console().read_char();
-            console::console().write_char(c);
-        }
-    });
-
-    scheduler::PTABLE.new_process("test_loop", || {
-        loop {
-            bsp::raspberrypi::SYSTEM_TIMER.wait_for_ms(1000);
-            println!("[core {}] Timer ding!", get_core());
-        }
-    });
+    scheduler::PTABLE.new_process("shell", tasks::shell::shell);
     
     loop {
         scheduler::PTABLE.schedule();

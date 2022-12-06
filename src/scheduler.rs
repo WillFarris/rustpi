@@ -268,15 +268,25 @@ impl PTableInner {
         crate::println!("Currently running:");
         for i in 0..4 {
             if let Some(curproc) = &self.running[i] {
-                todo!("print info without requiring Process struct implements Debug")
+                let page = &curproc.ctx as *const CPUContext as usize;
+                let name = curproc.name;
+                let pid = curproc.pid;
+
+                crate::println!("  [core {}] pid {}, page 0x{:X}, {}", i, pid, page, name);
             }
         }
-        crate::println!("Waiting to run:");
+        crate::println!("\nWaiting to run:");
         let mut cur = &self.head;
         while let Some(curproc) = cur {
-            todo!("print info without requiring Process struct implements Debug")
+            let page = &curproc.ctx as *const CPUContext as usize;
+            let name = curproc.name;
+            let pid = curproc.pid;
+
+            crate::println!("  pid {}, page 0x{:X}, {}", pid, page, name);
+
             cur = &curproc.next;
         }
+        crate::println!();
     }
 }
 
