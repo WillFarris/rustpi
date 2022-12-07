@@ -13,6 +13,7 @@ mod synchronization;
 mod utils;
 mod scheduler;
 mod tasks;
+mod driver;
 
 extern crate alloc;
 
