@@ -116,25 +116,3 @@ irq_init_vectors:
     adr     x0, vectors
     msr     vbar_el1, x0
     ret
-
-
-.globl u64_lock_acquire_asm
-u64_lock_acquire_asm:
-.p2align 8
-    mov     x2, #1
-    mrs     x2, mpidr_el1
-    and     x2, x2, 0b11
-    add     x2, x2, #1
-.p2align 2
-.L4:
-    ldaxr   x1, [x0]
-    stlxr   w3, x2, [x0]
-    cbnz    w3, .L4
-    uxtb    w1, w1
-    cbnz    w1, .L4
-    ret
-
-.globl u64_lock_release_asm
-u64_lock_release_asm:
-    stlr    xzr, [x0]
-    ret
