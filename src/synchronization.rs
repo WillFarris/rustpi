@@ -1,6 +1,4 @@
-use core::cell::UnsafeCell;
-
-use crate::utils;
+use core::{cell::UnsafeCell, sync::atomic::{AtomicBool, Ordering}};
 
 pub mod interface {
     use core::ops::{Deref, DerefMut};
@@ -53,7 +51,7 @@ pub mod interface {
 }
 
 pub struct SpinLock<T> where T: ?Sized {
-    guard: u64,
+    guard: AtomicBool,
     data: UnsafeCell<T>,
 }
 
@@ -63,7 +61,7 @@ unsafe impl<T> Sync for SpinLock<T> where T: ?Sized + Send {}
 impl<T> SpinLock<T> {
     pub const fn new(data: T) -> Self {
         Self {
-            guard: 0,
+            guard: AtomicBool::new(false),
             data: UnsafeCell::new(data),
         }
     }
@@ -73,16 +71,14 @@ impl<T> interface::Mutex for SpinLock<T> {
     type Data = T;
 
     fn lock(&self) -> Result<interface::MutexGuard<Self>, ()> {
-        unsafe {
-            utils::u64_lock_acquire_asm(&self.guard as *const u64);
-        }
+        while let Err(_failure) = self.guard.compare_exchange(false, true, Ordering::AcqRel, Ordering::Acquire) {}
         Ok(interface::MutexGuard::new(self))
     }
 
     fn unlock(&self) -> Result<(), ()> {
-        unsafe {
-            utils::u64_lock_release_asm(&self.guard as *const u64);
-        }
+        let locked = self.guard.load(Ordering::Acquire);
+        assert_eq!(locked, true); // Panic if we try to release a lock we don't hold
+        self.guard.store(false, Ordering::Release);
         Ok(())
     }
 

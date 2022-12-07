@@ -7,8 +7,6 @@ pub fn spin_for_cycles(n: usize) {
 extern "C" {
     fn get_core_asm() -> u8;
     fn get_el_asm() -> u8;
-    pub fn u64_lock_acquire_asm(lock_addr: *const u64);
-    pub fn u64_lock_release_asm(lock_addr: *const u64);
 }
 
 pub fn get_core() -> u8 {
