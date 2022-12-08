@@ -4,20 +4,22 @@
 #![feature(allocator_api)]
 #![feature(default_alloc_error_handler)]
 
-mod bsp;
-mod exception;
+mod utils;
 mod start;
+mod memory;
+mod bsp;
+mod synchronization;
 mod print;
 mod console;
-mod synchronization;
-mod utils;
+mod exception;
 mod scheduler;
 mod tasks;
-mod driver;
 
 extern crate alloc;
 
 use utils::{get_el, get_core};
+
+use crate::bsp::SYSTEM_TIMER;
 
 extern "C" {
     fn core_execute(core: u8, f: fn());
@@ -25,30 +27,35 @@ extern "C" {
 
 #[no_mangle]
 pub fn kernel_main() -> ! {
-    bsp::raspberrypi::uart_init();
-    println!("\n[core {}] Raspberry Pi 3 in EL{}\n", get_core(), get_el());
+    bsp::raspberrypi::driver::init();
+
+    
+    println!("\nBooting Raspberry Pi 3 in EL{}\n", get_el());
 
     bsp::raspberrypi::QA7_REGS.init_core_timer();
-    exception::irq_enable();
 
     scheduler::PTABLE.init_core();
 
     unsafe {
         for i in 0..3 {
             core_execute(i+1, || {
-                bsp::memory::mmu::init();
+                memory::mmu::init();
                 scheduler::PTABLE.init_core();
-                bsp::raspberrypi::SYSTEM_TIMER.wait_for_ms(get_core() as usize * 100);
                 bsp::raspberrypi::QA7_REGS.init_core_timer();
                 exception::irq_enable();
             });
         }
     }
 
-    bsp::raspberrypi::SYSTEM_TIMER.wait_for_ms(100);
+    tasks::register_cmd("ptable", || {
+        scheduler::PTABLE.print();
+    });
     
-    scheduler::PTABLE.new_process("print_ptable", || {
-      scheduler::PTABLE.print();
+    tasks::register_cmd("test_loop", || {
+        for i in 0..10 {
+            SYSTEM_TIMER.wait_for_ms(1000);
+            println!("loop {}", i+1);
+        }
     });
 
     scheduler::PTABLE.new_process("shell", tasks::shell::shell);

@@ -37,7 +37,7 @@ pub unsafe extern "C" fn _el1_rust_entry() -> ! {
 
     //TODO: Zero BSS section
     
-    crate::bsp::memory::mmu::identity_map_table();
-    crate::bsp::memory::mmu::init();
+    crate::memory::mmu::identity_map_table();
+    crate::memory::mmu::init();
     crate::kernel_main()
 }

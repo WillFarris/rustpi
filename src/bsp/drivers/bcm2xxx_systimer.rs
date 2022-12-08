@@ -1,11 +1,9 @@
-use core::fmt::{self, Write};
 use tock_registers::{
-    interfaces::{Readable, Writeable},
-    register_bitfields, register_structs,
-    registers::{ReadOnly, ReadWrite},
+    interfaces::Readable,
+    register_structs,
+    registers::ReadWrite,
 };
 
-use crate::{console, synchronization::{SpinLock, FakeLock}};
 use super::common::MMIODerefWrapper;
 
 register_structs! {

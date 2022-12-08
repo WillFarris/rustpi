@@ -1,37 +1,34 @@
-use alloc::{string::String, vec::Vec};
+use alloc::string::String;
 
 use crate::{console, println};
 
-fn parse_command(command: String) {
+
+fn parse_command(command: &str) {
     println!();
-    let mut tokens: Vec<&str> = command.split(' ').collect();
-    
-    let cmd = tokens[0];
-    match cmd {
+    match command {
         "help" => {
-            println!("here are the available commands: ");
+            super::CMD_LIST.print_cmds();
         },
-        _ => println!("invalid command!"),
+        "" => {},
+        cmd_with_args => super::CMD_LIST.run_cmd(cmd_with_args),
     }
 }
 
 pub fn shell() {
     crate::print!("shell > ");
 
-    let mut buffer: String = String::new();
+    let mut buffer: String = String::with_capacity(65536);
 
     loop {
-        loop {
-            let c = console::console().read_char();
-            console::console().write_char(c);
+        let c = console::console().read_char();
+        console::console().write_char(c);
 
-            if c == '\n' || c == '\r' {
-                parse_command(buffer);
-                buffer = String::new();
-                crate::print!("shell > ");
-            } else {
-                buffer.push(c);
-            }
+        if c == '\n' || c == '\r' {
+            parse_command(buffer.as_str());
+            buffer.clear();
+            crate::print!("shell > ");
+        } else {
+            buffer.push(c);
         }
     }
 }

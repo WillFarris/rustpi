@@ -5,7 +5,7 @@ use tock_registers::{
     registers::{ReadOnly, ReadWrite},
 };
 
-use crate::{console, synchronization::{SpinLock, FakeLock}};
+use crate::{console, synchronization::FakeLock};
 use super::common::MMIODerefWrapper;
 
 register_bitfields! {
@@ -221,6 +221,8 @@ impl MiniUartInner {
         self.registers.MU_MCR.set(0);
         self.registers.MU_BAUD.set(270);
         self.registers.MU_CNTL.write(MU_CNTL::RXEN::SET + MU_CNTL::TXEN::SET + MU_CNTL::RXAUTOEN::SET + MU_CNTL::RXAUTOEN::SET);
+
+        self.read_char(BlockingMode::NonBlocking);
     }
 
     

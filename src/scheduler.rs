@@ -73,7 +73,7 @@ impl CPUContext {
 
 }
 
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, PartialEq)]
 enum PState {
     TaskUnused,
     TaskSleep,
@@ -155,13 +155,17 @@ impl PTable {
     }
 
     pub fn init_core(&self) {
+        crate::exception::irq_disable();
         let mut table = self.inner.lock().unwrap();
         table.init_core_inner(get_core());
+        crate::exception::irq_enable();
     }
 
     pub fn new_process(&self, name: &'static str, f: fn()) {
+        crate::exception::irq_disable();
         let mut table = self.inner.lock().unwrap();
         table.new_process_inner(name, f);
+        crate::exception::irq_enable();
     }
 
     pub fn schedule(&self) {
@@ -176,13 +180,16 @@ impl PTable {
         let mut table = self.inner.lock().unwrap();
         table.exit_current_process();
       }
-      crate::exception::irq_enable();
       self.schedule();
     }
 
     pub fn print(&self) {
-        let table = self.inner.lock().unwrap();
-        table.print();
+        crate::exception::irq_disable();
+        {
+            let table = self.inner.lock().unwrap();
+            table.print();
+        }
+        crate::exception::irq_enable();
     }
     
     fn unlock(& self) {
@@ -225,7 +232,7 @@ impl PTableInner {
             pid: self.num_procs + 1,
             next: None,
         });
-        let sp = &new_proc.ctx as *const CPUContext as u64 + 0x1000;
+        let sp = &new_proc.ctx as *const CPUContext as u64 + 65536;
         new_proc.ctx.set_entry(f as u64);
         new_proc.ctx.set_pc(ret_from_fork as u64);
         new_proc.ctx.set_sp(sp);
@@ -265,7 +272,7 @@ impl PTableInner {
     }
 
     fn print(&self) {
-        crate::println!("Currently running:");
+        crate::println!("Process Table ---------------");
         for i in 0..4 {
             if let Some(curproc) = &self.running[i] {
                 let page = &curproc.ctx as *const CPUContext as usize;
@@ -283,10 +290,9 @@ impl PTableInner {
             let pid = curproc.pid;
 
             crate::println!("  pid {}, page 0x{:X}, {}", pid, page, name);
-
             cur = &curproc.next;
         }
-        crate::println!();
+        crate::println!("-----------------------------");
     }
 }
 

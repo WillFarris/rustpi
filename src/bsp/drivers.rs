@@ -1,5 +1,10 @@
-use crate::synchronization::{SpinLock, interface::Mutex};
+pub(crate) mod bcm2xxx_gpio;
+pub(crate) mod bcm2xxx_qa7;
+pub(crate) mod bcm2xxx_systimer;
+pub(crate) mod bcm2837_mini_uart;
+pub(crate) mod common;
 
+use crate::synchronization::{SpinLock, interface::Mutex};
 
 static DRIVER_MANAGER: DriverManager = DriverManager::new();
 
@@ -17,18 +22,15 @@ impl DriverManager {
     }
 
     pub fn register_driver(&self, descriptor: DeviceDriverDescriptor) {
-        let inner = self.inner.lock().unwrap();
-        inner.descriptors[inner.next_index] = Some(descriptor);
+        let mut inner = self.inner.lock().unwrap();
+        let idx = inner.next_index;
+        inner.descriptors[idx] = Some(descriptor);
         inner.next_index += 1;
     }
 
-    fn for_each_descriptor<'a>(&'a self, f: impl FnMut(&'a DeviceDriverDescriptor)) {
-        let inner = self.inner.lock().unwrap();
-        inner
-            .descriptors
-            .iter()
-            .filter_map(|x| x.as_ref())
-            .for_each(f);
+    fn for_each_descriptor(&self, f: impl FnMut(& DeviceDriverDescriptor)) {
+        let mut inner = self.inner.lock().unwrap();
+        inner.descriptors.iter().filter_map(|x| x.as_ref()).for_each(f);
     }
 
     pub unsafe fn init_drivers(&self) {
