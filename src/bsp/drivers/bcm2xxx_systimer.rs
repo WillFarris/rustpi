@@ -33,7 +33,7 @@ impl SystemTimer {
         }
     }
 
-    fn get_ticks(&self) -> usize {
+    pub fn get_ticks(&self) -> usize {
         let clo = self.registers.CLO.get() as usize;
         let chi = self.registers.CHI.get() as usize;
         clo | (chi << 32)

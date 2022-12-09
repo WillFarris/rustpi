@@ -29,7 +29,6 @@ extern "C" {
 pub fn kernel_main() -> ! {
     bsp::raspberrypi::driver::init();
 
-    
     println!("\nBooting Raspberry Pi 3 in EL{}\n", get_el());
 
     bsp::raspberrypi::QA7_REGS.init_core_timer();
@@ -56,6 +55,16 @@ pub fn kernel_main() -> ! {
             SYSTEM_TIMER.wait_for_ms(1000);
             println!("loop {}", i+1);
         }
+    });
+
+    tasks::register_cmd("uptime", || {
+        let raw_time = SYSTEM_TIMER.get_ticks();
+        let ms = raw_time / 1000;
+        let s = ms / 1000;
+        let m = s / 60;
+        let h = m / 60;
+        let d = h / 24;
+        crate::println!("uptime: {}d {}h {}m {}s", d, h % 24, m % 60, s % 60);
     });
 
     scheduler::PTABLE.new_process("shell", tasks::shell::shell);
