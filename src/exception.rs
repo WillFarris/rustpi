@@ -6,7 +6,7 @@ use crate::{println, utils::get_core, bsp::raspberrypi::QA7_REGS};
 
 global_asm!(include_str!("exception.s"));
 
-const EXCEPTION_ERROR_MESSAGES: [&'static str; 16] = [
+const EXCEPTION_ERROR_MESSAGES: [&str; 16] = [
     "SYNC_INVALID_EL1t",
     "IRQ_INVALID_EL1t",
     "FIQ_INVALID_EL1t",

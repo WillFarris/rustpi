@@ -1,8 +1,8 @@
 #![no_main]
 #![no_std]
+#![allow(unstable_features)]
 #![feature(format_args_nl)]
 #![feature(allocator_api)]
-#![feature(default_alloc_error_handler)]
 
 mod utils;
 mod start;
@@ -22,7 +22,14 @@ use utils::{get_el, get_core};
 use crate::bsp::SYSTEM_TIMER;
 
 extern "C" {
-    fn core_execute(core: u8, f: fn());
+    fn core_execute(core: u8, f: extern fn());
+}
+
+extern "C" fn init_core() {
+    memory::mmu::init();
+    scheduler::PTABLE.init_core();
+    bsp::raspberrypi::QA7_REGS.init_core_timer();
+    exception::irq_enable();
 }
 
 #[no_mangle]
@@ -37,12 +44,7 @@ pub fn kernel_main() -> ! {
 
     unsafe {
         for i in 0..3 {
-            core_execute(i+1, || {
-                memory::mmu::init();
-                scheduler::PTABLE.init_core();
-                bsp::raspberrypi::QA7_REGS.init_core_timer();
-                exception::irq_enable();
-            });
+            core_execute(i+1, init_core);
         }
     }
 

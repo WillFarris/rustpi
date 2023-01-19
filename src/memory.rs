@@ -146,6 +146,14 @@ pub mod alloc {
         static heap_start: u8;
         static heap_end: u8;
     }
+    
+    enum BuddyBlockState {
+      Free,
+      Allocated,
+      SplitLeft,
+      SplitRight,
+      SplitBoth,
+    }
 
     struct KernelAllocator {
         inner: SpinLock<KernelAllocatorInner>,

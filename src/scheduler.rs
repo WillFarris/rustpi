@@ -25,19 +25,19 @@ fn ret_from_fork() {
 
 #[repr(C, align(16))]
 struct CPUContext {
-    x19: u64,
-    x20: u64,
-    x21: u64,
-    x22: u64,
-    x23: u64,
-    x24: u64,
-    x25: u64,
-    x26: u64,
-    x27: u64,
-    x28: u64,
-    fp: u64,
-    sp: u64,
-    pc: u64,
+    x19: usize,
+    x20: usize,
+    x21: usize,
+    x22: usize,
+    x23: usize,
+    x24: usize,
+    x25: usize,
+    x26: usize,
+    x27: usize,
+    x28: usize,
+    fp: usize,
+    sp: usize,
+    pc: usize,
 }
 
 impl CPUContext {
@@ -59,15 +59,15 @@ impl CPUContext {
         }
     }
     
-    fn set_entry(&mut self, entry: u64) {
+    fn set_entry(&mut self, entry: usize) {
         self.x23 = entry;
     }
     
-    fn set_pc(&mut self, pc: u64) {
+    fn set_pc(&mut self, pc: usize) {
         self.pc = pc;
     }
 
-    fn set_sp(&mut self, sp: u64) {
+    fn set_sp(&mut self, sp: usize) {
         self.sp = sp;
     }
 
@@ -232,9 +232,9 @@ impl PTableInner {
             pid: self.num_procs + 1,
             next: None,
         });
-        let sp = &new_proc.ctx as *const CPUContext as u64 + 65536;
-        new_proc.ctx.set_entry(f as u64);
-        new_proc.ctx.set_pc(ret_from_fork as u64);
+        let sp = &new_proc.ctx as *const CPUContext as usize + 65536;
+        new_proc.ctx.set_entry(f as usize);
+        new_proc.ctx.set_pc(ret_from_fork as usize);
         new_proc.ctx.set_sp(sp);
 
         self.num_procs += 1;
