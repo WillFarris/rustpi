@@ -13,6 +13,8 @@ SECTIONS
 	.rodata : {
         *(.rodata*)
     }
+    . = ALIGN(65536);
+    __data_start = .;
 	.data : { 
         *(.data*)
     }
@@ -23,11 +25,11 @@ SECTIONS
 	bss_end = .;
     
     .locks : {
-        . = ALIGN(65536);
         LOCKS_START = .;
         *(.locks*)
         LOCKS_END = .;
     }
+    __data_end = .;
 
     /**************************************************
      *      Kernel Stack                              *

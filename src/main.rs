@@ -34,6 +34,9 @@ extern "C" fn init_core() {
 
 #[no_mangle]
 pub fn kernel_main() -> ! {
+    crate::memory::mmu::identity_map();
+    crate::memory::mmu::init();
+
     bsp::raspberrypi::driver::init();
 
     println!("\nBooting Raspberry Pi 3 in EL{}\n", get_el());
