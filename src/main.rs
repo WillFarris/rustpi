@@ -22,11 +22,11 @@ use utils::{get_el, get_core};
 use crate::bsp::SYSTEM_TIMER;
 
 extern "C" {
-    fn core_execute(core: u8, f: extern fn());
+    fn _core_execute(core: u8, f: extern fn());
 }
 
-extern "C" fn init_core() {
-    memory::mmu::init();
+extern "C" fn _init_core() {
+    memory::mmu::enable_mmu_and_caching();
     scheduler::PTABLE.init_core();
     bsp::raspberrypi::QA7_REGS.init_core_timer();
     exception::irq_enable();
@@ -34,8 +34,8 @@ extern "C" fn init_core() {
 
 #[no_mangle]
 pub fn kernel_main() -> ! {
-    crate::memory::mmu::identity_map();
-    crate::memory::mmu::init();
+    crate::memory::mmu::init_translation_tables();
+    //crate::memory::mmu::enable_mmu_and_caching();
 
     bsp::raspberrypi::driver::init();
 
@@ -45,11 +45,11 @@ pub fn kernel_main() -> ! {
 
     scheduler::PTABLE.init_core();
 
-    unsafe {
+    /*unsafe {
         for i in 0..3 {
             core_execute(i+1, init_core);
         }
-    }
+    }*/
 
     tasks::register_cmd("ptable", || {
         scheduler::PTABLE.print();

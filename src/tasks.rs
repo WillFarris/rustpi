@@ -6,7 +6,7 @@ use crate::synchronization::{SpinLock, interface::Mutex};
 
 const NUM_CMDS: usize = 10;
 
-#[link_section = ".locks"]
+//#[link_section = ".locks"]
 static CMD_LIST: CommandList = CommandList::new();
 
 pub fn register_cmd(name: &'static str, entry: fn()) {

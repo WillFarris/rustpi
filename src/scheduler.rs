@@ -1,7 +1,7 @@
 use crate::{utils::get_core, synchronization::{SpinLock, interface::Mutex}, exception};
 use alloc::boxed::Box;
 
-#[link_section = ".locks"]
+//#[link_section = ".locks"]
 pub static PTABLE: PTable = PTable::new();
 
 extern "C" {

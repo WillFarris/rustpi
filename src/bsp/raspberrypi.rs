@@ -1,5 +1,7 @@
 use super::drivers;
 
+pub mod memory;
+
 pub const PBASE_START: usize = 0x3F00_0000;
 pub const PBASE_END: usize = 0x4000_FFFF;
 pub const GPIO_ADDR: usize = PBASE_START + 0x0020_0000;
