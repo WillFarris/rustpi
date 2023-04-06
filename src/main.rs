@@ -19,7 +19,7 @@ extern crate alloc;
 
 use utils::{get_el, get_core};
 
-use crate::bsp::SYSTEM_TIMER;
+use bsp::system_timer;
 
 extern "C" {
     fn _core_execute(core: u8, f: extern fn());
@@ -34,10 +34,10 @@ extern "C" fn _init_core() {
 
 #[no_mangle]
 pub fn kernel_main() -> ! {
-    crate::memory::mmu::init_translation_tables();
+    //crate::memory::mmu::init_translation_tables();
     //crate::memory::mmu::enable_mmu_and_caching();
 
-    bsp::raspberrypi::driver::init();
+    bsp::driver::init();
 
     println!("\nBooting Raspberry Pi 3 in EL{}\n", get_el());
 
@@ -57,13 +57,13 @@ pub fn kernel_main() -> ! {
     
     tasks::register_cmd("test_loop", || {
         for i in 0..10 {
-            SYSTEM_TIMER.wait_for_ms(1000);
+            system_timer().wait_for_ms(1000);
             println!("loop {}", i+1);
         }
     });
 
     tasks::register_cmd("uptime", || {
-        let raw_time = SYSTEM_TIMER.get_ticks();
+        let raw_time = system_timer().get_ticks();
         let ms = raw_time / 1000;
         let s = ms / 1000;
         let m = s / 60;

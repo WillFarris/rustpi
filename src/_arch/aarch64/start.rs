@@ -14,7 +14,7 @@ static SPSR_EL3_INIT_VAL: u64 = SPSR_EL3::D::Masked.value | SPSR_EL3::A::Masked.
 #[no_mangle]
 static CPACR_EL1_INIT_VAL: u64 = CPACR_EL1::FPEN::TrapNothing.value;
 
-global_asm!(include_str!("start/start.s"));
+global_asm!(include_str!("cpu/start.s"));
 
 extern "C" {
     fn irq_init_vectors();

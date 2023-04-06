@@ -30,3 +30,7 @@ pub mod driver {
         MINI_UART.init();
     }
 }
+
+pub fn system_timer() -> &'static drivers::bcm2xxx_systimer::SystemTimer {
+    &SYSTEM_TIMER
+}
