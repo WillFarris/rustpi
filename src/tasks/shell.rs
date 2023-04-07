@@ -1,6 +1,6 @@
 use alloc::string::String;
 
-use crate::{console, println};
+use crate::{console::console, println};
 
 
 fn parse_command(command: &str) {
@@ -20,8 +20,8 @@ pub fn shell() {
     let mut buffer: String = String::with_capacity(65536);
 
     loop {
-        let c = console::console().read_char();
-        console::console().write_char(c);
+        let c = console().read_char();
+        console().write_char(c);
 
         if c == '\n' || c == '\r' {
             parse_command(buffer.as_str());

@@ -28,14 +28,14 @@ extern "C" {
 extern "C" fn _init_core() {
     memory::mmu::enable_mmu_and_caching();
     scheduler::PTABLE.init_core();
-    bsp::raspberrypi::QA7_REGS.init_core_timer();
+    //bsp::raspberrypi::QA7_REGS.init_core_timer();
     exception::irq_enable();
 }
 
 #[no_mangle]
 pub fn kernel_main() -> ! {
-    //crate::memory::mmu::init_translation_tables();
-    //crate::memory::mmu::enable_mmu_and_caching();
+    crate::memory::mmu::init_translation_tables();
+    crate::memory::mmu::enable_mmu_and_caching();
 
     bsp::driver::init();
 

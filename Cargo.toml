@@ -8,3 +8,6 @@ edition = "2021"
 [dependencies]
 tock-registers = "*"
 aarch64-cpu = "*"
+
+[features]
+bsp_rpi3 = []

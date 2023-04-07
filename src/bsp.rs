@@ -1,4 +1,7 @@
 pub mod drivers;
+
+#[cfg(feature = "bsp_rpi3")]
 pub mod raspberrypi;
 
-pub use raspberrypi::{memory, driver, system_timer};
+#[cfg(feature = "bsp_rpi3")]
+pub use raspberrypi::*;
