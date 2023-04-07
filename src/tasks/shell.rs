@@ -1,6 +1,5 @@
 use alloc::string::String;
-
-use crate::{console::console, println};
+use crate::{bsp::console, println};
 
 
 fn parse_command(command: &str) {
