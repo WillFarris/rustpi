@@ -1,11 +1,16 @@
 {
     "version": "0.2.0",
+    "editor.formatOnSave": true,
+    "editor.rulers": [100],
+    "rust-analyzer.cargo.target": "aarch64-unknown-none",
+    "rust-analyzer.cargo.features": ["bsp_rpi3"],
+    "rust-analyzer.cargo.target_arch": "aarch64",
     "configurations": [
         {
             "type": "gdb",
             "request": "attach",
             "name": "Attach to QEMU",
-            "executable": "target/aarch64-unknown-none/debug/kernel",
+            "executable": "target/aarch64-unknown-none/release/kernel",
             "target": "localhost:1234",
             "remote": true,
             "stopAtEntry": false,

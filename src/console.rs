@@ -1,5 +1,3 @@
-use crate::bsp::raspberrypi::MINI_UART;
-
 pub mod interface {
     use core::fmt;
 
@@ -15,8 +13,4 @@ pub mod interface {
     }
 
     pub trait ReadWrite: Write + Read {}
-}
-
-pub fn console() -> &'static dyn interface::ReadWrite {
-    &MINI_UART
 }
