@@ -1,46 +1,20 @@
-use aarch64_cpu::registers::{TCR_EL1, MAIR_EL1, TTBR0_EL1, TTBR1_EL1, SCTLR_EL1};
-use tock_registers::interfaces::Writeable;
+use aarch64_cpu::registers::{TCR_EL1, MAIR_EL1, TTBR0_EL1, SCTLR_EL1};
+use tock_registers::interfaces::{Writeable, ReadWriteable};
 use crate::bsp::memory::virt_mem_layout;
+
+use super::translation_table::TranslationTable;
 
 const NUM_TABLES: usize = 3;
 
-/*extern "C" {
-    static LOCKS_START: u8;
-    static LOCKS_END: u8;
-}*/
 
-#[derive(Copy, Clone)]
-struct PageDescriptor {
-    value: usize,
+pub mod mair {
+    pub const DEVICE: u64 = 0;
+    pub const NORMAL_WB_NT_RW: u64 = 1;
+    pub const NORMAL_NC: u64 = 4;
 }
 
-impl PageDescriptor {
-    const fn zero() -> Self {
-        Self {value: 0}
-    }
-}
 
-#[derive(Copy, Clone)]
-struct TableDescriptor {
-    value: usize,
-}
-
-impl TableDescriptor {
-    const fn zero() -> Self {
-        Self {value: 0}
-    }
-}
-
-#[repr(C, align(65536))]
-struct TranslationTable {
-    lower_level3: [[PageDescriptor; 8192]; NUM_TABLES],
-    lower_level2: [TableDescriptor; NUM_TABLES],
-
-    /*higher_level3: [[usize; 8192]; NUM_TABLES],
-    higher_level2: [usize; 8192],*/
-}
-
-impl TranslationTable {
+/*impl<const NUM_TABLES: usize> TranslationTable<NUM_TABLES> {
     const fn new() -> Self {
         Self {
             lower_level3: [[PageDescriptor::zero(); 8192]; NUM_TABLES],
@@ -84,31 +58,41 @@ impl TranslationTable {
             //crate::println!("Address of translation_table: {:#0x}", unsafe {&TRANSLATION_TABLE as *const PageTable as usize});
         }
     }
-}
+}*/
 
 #[no_mangle]
-static mut TRANSLATION_TABLE: TranslationTable = TranslationTable::new();
+static mut TRANSLATION_TABLE: TranslationTable<3> = TranslationTable::new();
 
-pub fn init_translation_tables() {
+pub fn populate_tables() {
 
     let layout = virt_mem_layout();
 
     for region in layout {
         let name = region.name;
-        let from = region.physical_start;
-        let from = from();
-        let to = region.physical_end;
-        let to = to();
+        let region_start = (region.physical_start)();
+        assert_eq!(region_start & !0xFFFF, region_start);
+        let region_end = (region.physical_end)();
+        let last_page = region_end & !0xFFFF;
 
-        crate::println!("{}: {:#x} - {:#x} ", name, from, to);
+        // TODO: Support page sizes other than 64KiB
+        let num_pages = 1 + (last_page - region_start) / 0x10000;
+
+        /*unsafe {
+            TRANSLATION_TABLE.lower_level2[0] = TableDescriptor {value:(&TRANSLATION_TABLE.lower_level3[0] as *const PageDescriptor) as usize};
+        }*/
+
+        crate::println!("mapping {}: {:#x} - {:#x} (last page {:#x})", name, region_start, region_end, last_page);
+        for i in 0..num_pages {
+            let page_address = region_start + i * 0x10000;
+            crate::println!("Mapping {:#x}", page_address);
+
+            let level2_index = (page_address >> 30) & 0x3FF;
+            let level3_index = (page_address >> 16) & 0x3FFF;
+
+            //let attributes: tock_registers::fields::FieldValue<u64, STAGE1_PAGE_DESCRIPTOR::Register> = region.attributes.into();
+        }
+
     }
-
-    todo!("Translation Table apping")
-    
-    
-    /*unsafe {
-        TRANSLATION_TABLE.identity_map();
-    }*/
 }
 
 pub fn enable_mmu_and_caching() {
@@ -122,9 +106,10 @@ pub fn enable_mmu_and_caching() {
         MAIR_EL1::Attr4_Normal_Outer::NonCacheable
     );
 
+    let t0sz = 32;
+
     // Set TCR_EL1
-    let tcr_el1 = (
-        TCR_EL1::TBI0::Used +
+    TCR_EL1.write(TCR_EL1::TBI0::Used +
         TCR_EL1::IPS::Bits_40 + 
         TCR_EL1::TG0::KiB_64 +
         TCR_EL1::SH0::Outer +
@@ -132,9 +117,9 @@ pub fn enable_mmu_and_caching() {
         TCR_EL1::IRGN0::WriteBack_ReadAlloc_NoWriteAlloc_Cacheable +
         TCR_EL1::EPD0::EnableTTBR0Walks +
         TCR_EL1::A1::TTBR0 +
-        TCR_EL1::EPD1::DisableTTBR1Walks
-    ).value | 32;
-    TCR_EL1.set(tcr_el1);
+        TCR_EL1::EPD1::DisableTTBR1Walks +
+        TCR_EL1::T0SZ.val(t0sz)
+    );
 
     // Set TTBR1_EL1 to point to translation_table.higher_level2
     /*TTBR1_EL1.set(
@@ -144,29 +129,22 @@ pub fn enable_mmu_and_caching() {
     );*/
 
     // Set TTBR0_EL1 to point to translation_table.lower_level2;
-    TTBR0_EL1.set(
+    /*TTBR0_EL1.set_baddr(
         unsafe {
             &TRANSLATION_TABLE.lower_level2 as *const [TableDescriptor; NUM_TABLES] as u64
         }
-    );
+    );*/
+
+    aarch64_cpu::asm::barrier::isb(aarch64_cpu::asm::barrier::SY);
 
     // Set d-cache, i-cache, mmu enable bits of SCTLR_EL1
-    SCTLR_EL1.write(
+    SCTLR_EL1.modify(
         SCTLR_EL1::C::Cacheable +
         SCTLR_EL1::I::Cacheable +
         SCTLR_EL1::M::Enable
     );
     
-
-    // Invalidate TLB, vmalle1
-    unsafe {
-        core::arch::asm!("
-            isb
-            tlbi vmalle1
-            dsb sy
-            isb
-        ");
-    }
+    aarch64_cpu::asm::barrier::isb(aarch64_cpu::asm::barrier::SY);
 
 }
 

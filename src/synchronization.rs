@@ -9,6 +9,7 @@ pub mod interface {
         fn lock(&self) -> Result<MutexGuard<Self>, ()>;
         fn unlock(&self) -> Result<(), ()>;
         unsafe fn get_data(&self) -> &Self::Data;
+        #[allow(clippy::mut_from_ref)]
         unsafe fn get_data_mut(&self) -> &mut Self::Data;
     }
 
@@ -77,7 +78,7 @@ impl<T> interface::Mutex for SpinLock<T> {
 
     fn unlock(&self) -> Result<(), ()> {
         let locked = self.guard.load(Ordering::Acquire);
-        assert_eq!(locked, true); // Panic if we try to release a lock we don't hold
+        assert!(locked); // Panic if we try to release a lock we don't hold
         self.guard.store(false, Ordering::Release);
         Ok(())
     }

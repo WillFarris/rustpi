@@ -34,10 +34,10 @@ extern "C" fn _init_core() {
 
 #[no_mangle]
 pub fn kernel_main() -> ! {
-    crate::memory::mmu::init_translation_tables();
-    crate::memory::mmu::enable_mmu_and_caching();
-
     bsp::driver::init();
+
+    crate::memory::mmu::populate_tables();
+    crate::memory::mmu::enable_mmu_and_caching();
 
     println!("\nBooting Raspberry Pi 3 in EL{}\n", get_el());
 
@@ -78,6 +78,7 @@ pub fn kernel_main() -> ! {
         scheduler::PTABLE.schedule();
     }
 }
+
 
 #[panic_handler]
 pub unsafe fn panic(panic_info: &core::panic::PanicInfo) -> ! {

@@ -18,7 +18,7 @@ SECTIONS
 
 
     . = ALIGN(65536);
-    __data_start = .;
+    __mapped_dram_start = .;
 	.data : {
         *(.data*)
     }
@@ -33,13 +33,10 @@ SECTIONS
         *(.locks*)
         LOCKS_END = .;
     }
-    __data_end = .;
 
     /**************************************************
      *      Kernel Stack                              *
      **************************************************/
-    . = ALIGN(65536);
-    __stack_start = .;
     .stack_core0 (NOLOAD) : {
         . = ALIGN(16);
         __stack_start_core0__ = .;
@@ -92,16 +89,13 @@ SECTIONS
         __EL3_stack_core3 = .;
         __stack_end_core3__ = .;    
     }
-    __stack_end = .;
-
-    . = ALIGN(65536);
-    __heap_start = .;
     .heap (NOLOAD) : {
         heap_start = .;
         . = . + 0x1000 * 1024;
         heap_end = .;
     }
-    __heap_end = .;
+    __mapped_dram_end = .;
+    . = ALIGN(65536);
 
     __kernel_img_end = .;
 

@@ -1,5 +1,7 @@
 
-pub enum MemoryAccessPermissions {
+mod translation_table;
+
+pub enum AccessPermissions {
     ReadOnly,
     ReadWrite,
 }
@@ -9,16 +11,20 @@ pub enum MemoryAttributes {
     Device,
 }
 
+pub struct AttributeFields {
+    pub execute_never: bool,
+    pub permissions: AccessPermissions,
+    pub memory_attributes: MemoryAttributes,
+}
+
 pub struct TranslationDescription {
     pub name: &'static str,
 
     pub virtual_start: fn() -> usize,
     pub physical_start: fn() -> usize,
     pub physical_end: fn() -> usize,
-    
-    pub can_execute: bool,
-    pub permissions: MemoryAccessPermissions,
-    pub attributes: MemoryAttributes,
+
+    pub attributes: AttributeFields,
 }
 
 #[cfg(target_arch = "aarch64")]

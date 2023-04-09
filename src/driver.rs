@@ -1,9 +1,3 @@
-pub(crate) mod bcm2xxx_gpio;
-pub(crate) mod bcm2xxx_qa7;
-pub(crate) mod bcm2xxx_systimer;
-pub(crate) mod bcm2837_mini_uart;
-pub(crate) mod common;
-
 use crate::synchronization::{SpinLock, interface::Mutex};
 
 static DRIVER_MANAGER: DriverManager = DriverManager::new();
@@ -98,4 +92,3 @@ pub struct DeviceDriverDescriptor {
     device_driver: &'static (dyn interface::DeviceDriver + Sync),
     post_init_callback: Option<DeviceDriverPostInitCallback>,
 }
-

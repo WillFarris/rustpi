@@ -4,16 +4,16 @@ use core::alloc::GlobalAlloc;
 
 extern "C" {
     static heap_start: u8;
-    static heap_end: u8;
+    //static heap_end: u8;
 }
 
-enum BuddyBlockState {
+/*enum BuddyBlockState {
     Free,
     Allocated,
     SplitLeft,
     SplitRight,
     SplitBoth,
-}
+}*/
 
 struct KernelAllocator {
     inner: SpinLock<KernelAllocatorInner>,
@@ -63,7 +63,7 @@ impl KernelAllocatorInner {
         let iter = NUM_HEAP_PAGES / num_pages;
         for i in 0..iter {
             let mut valid = true;
-            for j in 0..num_pages {
+            for _ in 0..num_pages {
                 if self.map[i] == 1 {
                     valid = false;
                 }

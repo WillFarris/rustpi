@@ -1,4 +1,4 @@
-use super::drivers;
+use super::device_driver;
 
 pub mod memory;
 
@@ -10,14 +10,10 @@ const _PL011_UART_ADDR: usize = PBASE_START + 0x0020_1000;
 const SYS_TIMER_ADDR: usize = PBASE_START + 0x0000_3000;
 const QA7_REGS_ADDR: usize = 0x4000_0000;
 
-pub static GPIO: drivers::bcm2xxx_gpio::GPIO = unsafe { drivers::bcm2xxx_gpio::GPIO::new(GPIO_ADDR) };
-
-#[no_mangle]
-pub static MINI_UART: drivers::bcm2837_mini_uart::MiniUart = unsafe { drivers::bcm2837_mini_uart::MiniUart::new(AUX_REGS_ADDR) };
-#[no_mangle]
-pub static QA7_REGS: drivers::bcm2xxx_qa7::QA7Registers = unsafe { drivers::bcm2xxx_qa7::QA7Registers::new(QA7_REGS_ADDR) };
-#[no_mangle]
-pub static SYSTEM_TIMER: drivers::bcm2xxx_systimer::SystemTimer = unsafe { drivers::bcm2xxx_systimer::SystemTimer::new(SYS_TIMER_ADDR) };
+pub static GPIO: device_driver::GPIO = unsafe { device_driver::GPIO::new(GPIO_ADDR) };
+pub static MINI_UART: device_driver::MiniUart = unsafe { device_driver::MiniUart::new(AUX_REGS_ADDR) };
+pub static QA7_REGS: device_driver::QA7Registers = unsafe { device_driver::QA7Registers::new(QA7_REGS_ADDR) };
+pub static SYSTEM_TIMER: device_driver::SystemTimer = unsafe { device_driver::SystemTimer::new(SYS_TIMER_ADDR) };
 
 pub mod driver {
     use crate::bsp::raspberrypi::{GPIO, MINI_UART};
@@ -25,9 +21,11 @@ pub mod driver {
     pub fn init() {
         GPIO.init_mini_uart_pins();
         MINI_UART.init();
+
+        crate::console::register_console(&MINI_UART);
     }
 }
 
-pub fn system_timer() -> &'static drivers::bcm2xxx_systimer::SystemTimer {
+pub fn system_timer() -> &'static device_driver::SystemTimer {
     &SYSTEM_TIMER
 }

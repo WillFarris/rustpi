@@ -3,7 +3,7 @@ use core::fmt;
 //#[doc(hidden)]
 pub fn _print(args: fmt::Arguments) {
     unsafe {
-        crate::bsp::console::console().write_fmt(args).unwrap();
+        crate::console::console().write_fmt(args).unwrap();
     }
 }
 
