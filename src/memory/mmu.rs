@@ -1,5 +1,6 @@
-
 mod translation_table;
+
+pub struct TranslationGranule<const GRANULE_SIZE: usize>;
 
 pub enum AccessPermissions {
     ReadOnly,
@@ -25,6 +26,16 @@ pub struct TranslationDescription {
     pub physical_end: fn() -> usize,
 
     pub attributes: AttributeFields,
+}
+
+impl<const GRANULE_SIZE: usize> TranslationGranule<GRANULE_SIZE> {
+    pub const SIZE: usize = Self::size_checked();
+    pub const SHIFT: usize = Self::SIZE.trailing_zeros() as usize;
+
+    const fn size_checked() -> usize {
+        assert!(GRANULE_SIZE.is_power_of_two());
+        GRANULE_SIZE
+    }
 }
 
 #[cfg(target_arch = "aarch64")]

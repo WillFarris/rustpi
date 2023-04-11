@@ -1,7 +1,11 @@
 use core::convert;
-use tock_registers::register_bitfields;
+use tock_registers::{register_bitfields, registers::InMemoryRegister};
+use tock_registers::interfaces::{Readable, Writeable};
 
-use crate::memory::mmu::{AttributeFields, TranslationDescription};
+use crate::memory::mmu::{AttributeFields, TranslationGranule, TranslationDescription};
+
+pub type Granule512MiB = TranslationGranule<{ 512 * 1024 * 1024 }>;
+pub type Granule64KiB = TranslationGranule<{ 64 * 1024 }>;
 
 // A table descriptor, as per ARMv8-A Architecture Reference Manual Figure D5-15.
 register_bitfields! {u64,
@@ -88,7 +92,7 @@ impl convert::From<AttributeFields> for tock_registers::fields::FieldValue<u64, 
 
 #[derive(Copy, Clone)]
 struct PageDescriptor {
-    value: usize,
+    value: u64,
 }
 
 impl PageDescriptor {
@@ -99,12 +103,35 @@ impl PageDescriptor {
 
 #[derive(Copy, Clone)]
 struct TableDescriptor {
-    value: usize,
+    value: u64,
 }
 
 impl TableDescriptor {
     const fn zero() -> Self {
         Self {value: 0}
+    }
+
+    fn from_next_level_table_addr(phys_next_lvl_table_addr: usize) -> Self {
+        let mut val = InMemoryRegister::<u64, STAGE1_TABLE_DESCRIPTOR::Register>::new(0);
+
+        let shifted = phys_next_lvl_table_addr >> Granule64KiB::SHIFT;
+        val.write(
+            STAGE1_TABLE_DESCRIPTOR::NEXT_LEVEL_TABLE_ADDR_64KiB.val(shifted as u64)
+                + STAGE1_TABLE_DESCRIPTOR::TYPE::Table
+                + STAGE1_TABLE_DESCRIPTOR::VALID::True,
+        );
+
+        Self { value: val.get() }
+    }
+}
+
+trait StartAddr {
+    fn phys_start_addr_usize(&self) -> usize;
+}
+
+impl<T, const N: usize> StartAddr for [T; N] {
+    fn phys_start_addr_usize(&self) -> usize {
+        self as *const _ as usize
     }
 }
 
@@ -122,7 +149,12 @@ impl<const NUM_TABLES: usize> TranslationTable<NUM_TABLES> {
         }
     }
 
-    pub fn populate_tables(&mut self, descriptions: &[TranslationDescription]) {
+    pub fn populate_tables(&mut self) {
+
+        for (level2_num, level2_entry) in self.lower_level2.iter_mut().enumerate() {
+            *level2_entry = TableDescriptor::from_next_level_table_addr(self.lower_level3[level2_num].phys_start_addr_usize());
+
+        }
         
     }
 
