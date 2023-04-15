@@ -2,6 +2,7 @@ use core::convert;
 use tock_registers::{register_bitfields, registers::InMemoryRegister};
 use tock_registers::interfaces::{Readable, Writeable};
 
+use crate::bsp;
 use crate::memory::mmu::{AttributeFields, TranslationGranule, TranslationDescription};
 
 pub type Granule512MiB = TranslationGranule<{ 512 * 1024 * 1024 }>;
@@ -154,6 +155,16 @@ impl<const NUM_TABLES: usize> TranslationTable<NUM_TABLES> {
         for (level2_num, level2_entry) in self.lower_level2.iter_mut().enumerate() {
             *level2_entry = TableDescriptor::from_next_level_table_addr(self.lower_level3[level2_num].phys_start_addr_usize());
 
+            for (level3_num, level3_entry) in self.lower_level3[level2_num].iter_mut().enumerate() {
+                let virt_addr = (level2_num << Granule512MiB::SHIFT) + (level3_num << Granule64KiB::SHIFT);
+
+                //let layout = bsp::memory::mmu::virt_mem_layout();
+
+                //let (phys_output_addr, attribute_fields) = bsp::memory::mmu::virt_mem_layout().virt_addr_properties(virt_addr)?;
+                //*level3_entry = PageDescriptor::from_output_addr(phys_output_addr, &attribute_fields);
+
+
+            }
         }
         
     }

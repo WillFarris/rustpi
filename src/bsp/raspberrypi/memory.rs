@@ -10,42 +10,57 @@ extern "Rust" {
     static __mapped_dram_end: UnsafeCell<()>;
 }
 
-pub const LAYOUT: [TranslationDescription; 3] = [
-    TranslationDescription {
-        name: "Kernel code (.text, .rodata)",
-        physical_start: text_start,
-        physical_end: text_end,
-        virtual_start: text_start,
-        attributes: AttributeFields {
-            execute_never: false,
-            permissions: AccessPermissions::ReadOnly,
-            memory_attributes: MemoryAttributes::CacheableDRAM
-        },
+pub struct KernelVirtualLayout<const NUM_SPECIAL_RANGES: usize> {
+    translation_descriptions: [TranslationDescription; NUM_SPECIAL_RANGES],
+}
+
+impl<const NUM_SPECIAL_RANGES: usize> KernelVirtualLayout<{ NUM_SPECIAL_RANGES }> {
+
+    fn virt_addr_properties(virt_addr: usize) {
         
-    },
-    TranslationDescription {
-        name: "Mapped DRAM (.data, stack, heap)",
-        physical_start: mapped_dram_start,
-        physical_end: mapped_dram_end,
-        virtual_start: mapped_dram_start,
-        attributes: AttributeFields {
-            execute_never: true,
-            permissions: AccessPermissions::ReadWrite,
-            memory_attributes: MemoryAttributes::CacheableDRAM
+    }
+}
+
+const NUM_MEM_RANGES: usize = 3;
+pub const KERNEL_VIRTUAL_LAYOUT: KernelVirtualLayout<NUM_MEM_RANGES> = KernelVirtualLayout {
+    translation_descriptions: [
+        TranslationDescription {
+            name: "Kernel code (.text, .rodata)",
+            physical_start: text_start,
+            physical_end: text_end,
+            virtual_start: text_start,
+            attributes: AttributeFields {
+                execute_never: false,
+                permissions: AccessPermissions::ReadOnly,
+                memory_attributes: MemoryAttributes::CacheableDRAM
+            },
+            
         },
-    },
-    TranslationDescription {
-        name: "MMIO",
-        physical_start: mmio_start,
-        physical_end: mmio_end,
-        virtual_start: mmio_start,
-        attributes: AttributeFields {
-            execute_never: true,
-            permissions: AccessPermissions::ReadWrite,
-            memory_attributes: MemoryAttributes::Device,
+        TranslationDescription {
+            name: "Mapped DRAM (.data, stack, heap)",
+            physical_start: mapped_dram_start,
+            physical_end: mapped_dram_end,
+            virtual_start: mapped_dram_start,
+            attributes: AttributeFields {
+                execute_never: true,
+                permissions: AccessPermissions::ReadWrite,
+                memory_attributes: MemoryAttributes::CacheableDRAM
+            },
         },
-    },
-];
+        TranslationDescription {
+            name: "MMIO",
+            physical_start: mmio_start,
+            physical_end: mmio_end,
+            virtual_start: mmio_start,
+            attributes: AttributeFields {
+                execute_never: true,
+                permissions: AccessPermissions::ReadWrite,
+                memory_attributes: MemoryAttributes::Device,
+            },
+        },
+    ],
+};
+
 
 #[inline(always)]
 fn text_start() -> usize {
@@ -77,6 +92,6 @@ fn mmio_end() -> usize {
     PBASE_END
 }
 
-pub fn virt_mem_layout() -> &'static [TranslationDescription] {
-    &LAYOUT
+pub fn virt_mem_layout() -> &'static KernelVirtualLayout<NUM_MEM_RANGES> {
+    &KERNEL_VIRTUAL_LAYOUT
 }
