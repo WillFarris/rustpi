@@ -36,7 +36,6 @@ extern "C" fn _init_core() {
 pub fn kernel_main() -> ! {
     bsp::driver::init();
 
-    crate::memory::mmu::populate_tables();
     crate::memory::mmu::enable_mmu_and_caching();
 
     println!("\nBooting Raspberry Pi 3 in EL{}\n", get_el());

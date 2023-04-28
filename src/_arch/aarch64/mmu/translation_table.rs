@@ -100,6 +100,21 @@ impl PageDescriptor {
     const fn zero() -> Self {
         Self {value: 0}
     }
+
+    pub fn from_output_addr(phys_output_addr: usize, attribute_fields: &AttributeFields) -> Self {
+        let val = InMemoryRegister::<u64, STAGE1_PAGE_DESCRIPTOR::Register>::new(0);
+
+        let shifted = phys_output_addr as u64 >> Granule64KiB::SHIFT;
+        val.write(
+            STAGE1_PAGE_DESCRIPTOR::OUTPUT_ADDR_64KiB.val(shifted)
+                + STAGE1_PAGE_DESCRIPTOR::AF::True
+                + STAGE1_PAGE_DESCRIPTOR::TYPE::Page
+                + STAGE1_PAGE_DESCRIPTOR::VALID::True
+                + attribute_fields.clone().into(),
+        );
+
+        Self { value: val.get() }
+    }
 }
 
 #[derive(Copy, Clone)]
@@ -158,12 +173,9 @@ impl<const NUM_TABLES: usize> TranslationTable<NUM_TABLES> {
             for (level3_num, level3_entry) in self.lower_level3[level2_num].iter_mut().enumerate() {
                 let virt_addr = (level2_num << Granule512MiB::SHIFT) + (level3_num << Granule64KiB::SHIFT);
 
-                //let layout = bsp::memory::mmu::virt_mem_layout();
 
-                //let (phys_output_addr, attribute_fields) = bsp::memory::mmu::virt_mem_layout().virt_addr_properties(virt_addr)?;
-                //*level3_entry = PageDescriptor::from_output_addr(phys_output_addr, &attribute_fields);
-
-
+                let (phys_output_addr, attribute_fields) = bsp::memory::virt_mem_layout().virt_addr_properties(virt_addr).unwrap();
+                *level3_entry = PageDescriptor::from_output_addr(phys_output_addr, &attribute_fields);
             }
         }
         

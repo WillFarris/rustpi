@@ -15,9 +15,14 @@ pub struct KernelVirtualLayout<const NUM_SPECIAL_RANGES: usize> {
 }
 
 impl<const NUM_SPECIAL_RANGES: usize> KernelVirtualLayout<{ NUM_SPECIAL_RANGES }> {
-
-    fn virt_addr_properties(virt_addr: usize) {
-        
+    pub fn virt_addr_properties(&self, virt_addr: usize) -> Result<(usize, AttributeFields), &'static str> {
+        for desc in self.translation_descriptions.iter() {
+            let physical_size = (desc.physical_end)() - (desc.physical_start)();
+            if virt_addr >= (desc.virtual_start)() && virt_addr < (desc.virtual_start)() + physical_size {
+                return Ok((virt_addr, desc.attributes.clone()))
+            }
+        }
+        Err("virtual address not mapped")
     }
 }
 

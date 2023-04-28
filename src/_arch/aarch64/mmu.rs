@@ -63,7 +63,7 @@ pub mod mair {
 #[no_mangle]
 static mut TRANSLATION_TABLE: TranslationTable<3> = TranslationTable::new();
 
-pub fn populate_tables() {
+/*pub fn populate_tables() {
 
     let layout = virt_mem_layout();
 
@@ -93,7 +93,7 @@ pub fn populate_tables() {
         }
 
     }
-}
+}*/
 
 pub fn enable_mmu_and_caching() {
 

@@ -2,16 +2,19 @@ mod translation_table;
 
 pub struct TranslationGranule<const GRANULE_SIZE: usize>;
 
+#[derive(Clone)]
 pub enum AccessPermissions {
     ReadOnly,
     ReadWrite,
 }
 
+#[derive(Clone)]
 pub enum MemoryAttributes {
     CacheableDRAM,
     Device,
 }
 
+#[derive(Clone)]
 pub struct AttributeFields {
     pub execute_never: bool,
     pub permissions: AccessPermissions,

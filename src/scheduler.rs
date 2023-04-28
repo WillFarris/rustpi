@@ -250,8 +250,8 @@ impl PTableInner {
             return;
         }
 
-        let mut next = self.head.get_first().unwrap();
-        let mut prev = self.running[core as usize].take().unwrap();
+        let next = self.head.get_first().unwrap();
+        let prev = self.running[core as usize].take().unwrap();
         
         let prev_ptr = &prev.ctx as *const CPUContext as usize;
         let next_ptr = &next.ctx as *const CPUContext as usize;
