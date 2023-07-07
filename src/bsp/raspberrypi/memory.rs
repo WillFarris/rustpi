@@ -22,7 +22,9 @@ impl<const NUM_SPECIAL_RANGES: usize> KernelVirtualLayout<{ NUM_SPECIAL_RANGES }
                 return Ok((virt_addr, desc.attributes.clone()))
             }
         }
-        Err("virtual address not mapped")
+        //TODO: make this not bad
+        //Err("virtual address not mapped")
+        Ok((virt_addr, self.translation_descriptions[1].attributes.clone()))
     }
 }
 
@@ -65,7 +67,6 @@ pub const KERNEL_VIRTUAL_LAYOUT: KernelVirtualLayout<NUM_MEM_RANGES> = KernelVir
         },
     ],
 };
-
 
 #[inline(always)]
 fn text_start() -> usize {

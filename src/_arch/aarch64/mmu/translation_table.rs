@@ -3,7 +3,7 @@ use tock_registers::{register_bitfields, registers::InMemoryRegister};
 use tock_registers::interfaces::{Readable, Writeable};
 
 use crate::bsp;
-use crate::memory::mmu::{AttributeFields, TranslationGranule, TranslationDescription};
+use crate::memory::mmu::{AttributeFields, TranslationGranule};
 
 pub type Granule512MiB = TranslationGranule<{ 512 * 1024 * 1024 }>;
 pub type Granule64KiB = TranslationGranule<{ 64 * 1024 }>;
@@ -84,8 +84,17 @@ impl convert::From<AttributeFields> for tock_registers::fields::FieldValue<u64, 
         let mut desc = match value.memory_attributes {
             crate::memory::mmu::MemoryAttributes::CacheableDRAM => STAGE1_PAGE_DESCRIPTOR::SH::InnerShareable
                 + STAGE1_PAGE_DESCRIPTOR::AttrIndx.val(crate::memory::mmu::arch_mmu::mair::NORMAL_WB_NT_RW),
-            crate::memory::mmu::MemoryAttributes::Device => todo!(),
+            crate::memory::mmu::MemoryAttributes::Device => STAGE1_PAGE_DESCRIPTOR::SH::OuterShareable
+                + STAGE1_PAGE_DESCRIPTOR::AttrIndx.val(crate::memory::mmu::arch_mmu::mair::DEVICE),
         };
+
+        desc += if value.execute_never {
+            STAGE1_PAGE_DESCRIPTOR::PXN::True
+        } else {
+            STAGE1_PAGE_DESCRIPTOR::PXN::False
+        };
+
+        desc += STAGE1_PAGE_DESCRIPTOR::UXN::True;
 
         desc
     }
@@ -179,6 +188,10 @@ impl<const NUM_TABLES: usize> TranslationTable<NUM_TABLES> {
             }
         }
         
+    }
+
+    pub fn phys_base_address(&self) -> u64 {
+        &self.lower_level2 as *const [TableDescriptor; NUM_TABLES] as u64
     }
 
 }
