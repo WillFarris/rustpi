@@ -8,3 +8,4 @@ Requires the [Rust toolchain](https://rustup.rs) and Make.
 So far, barely anything. There is a mini UART driver but that's about it. The following are planned and just need to be ported from my previous project:
 * Timer interrupts
 * SMP scheduler
+* Identity-mapped MMU
