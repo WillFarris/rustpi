@@ -1,5 +1,6 @@
 use core::arch::global_asm;
 use aarch64_cpu::registers::*;
+use core::cell::UnsafeCell;
 
 use crate::get_core;
 
@@ -21,6 +22,11 @@ extern "C" {
     fn slave_core_sleep();
 }
 
+extern "Rust" {
+    static bss_begin: UnsafeCell<()>;
+    static bss_end: UnsafeCell<()>;
+}
+
 pub fn _hang() -> ! {
     loop {
         aarch64_cpu::asm::wfe();
@@ -35,7 +41,16 @@ pub unsafe extern "C" fn _el1_rust_entry() -> ! {
         slave_core_sleep()
     }
 
-    //TODO: Zero BSS section
+    //TODO: Make this not suck
+    let mut bss_index = bss_begin.get() as usize;
+    unsafe {
+        while bss_index  < bss_end.get() as usize {
+            let addr = bss_index as *mut u8;
+            *addr = 0;
+            bss_index += 1;
+        }
+    }
+
     
     crate::kernel_main()
 }

@@ -137,7 +137,7 @@ impl TableDescriptor {
     }
 
     fn from_next_level_table_addr(phys_next_lvl_table_addr: usize) -> Self {
-        let mut val = InMemoryRegister::<u64, STAGE1_TABLE_DESCRIPTOR::Register>::new(0);
+        let val = InMemoryRegister::<u64, STAGE1_TABLE_DESCRIPTOR::Register>::new(0);
 
         let shifted = phys_next_lvl_table_addr >> Granule64KiB::SHIFT;
         val.write(

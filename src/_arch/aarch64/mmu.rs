@@ -10,7 +10,6 @@ const NUM_TABLES: usize = 3;
 pub mod mair {
     pub const DEVICE: u64 = 0;
     pub const NORMAL_WB_NT_RW: u64 = 1;
-    pub const _NORMAL_NC: u64 = 4;
 }
 
 #[no_mangle]
@@ -21,7 +20,6 @@ pub fn enable_mmu_and_caching() {
 
     unsafe { TRANSLATION_TABLE.populate_tables() };
 
-    // Set MAIR_EL1
     MAIR_EL1.write(
         MAIR_EL1::Attr0_Device::nonGathering_nonReordering_noEarlyWriteAck +
         MAIR_EL1::Attr1_Normal_Inner::WriteBack_NonTransient_ReadWriteAlloc +
@@ -33,7 +31,8 @@ pub fn enable_mmu_and_caching() {
     let t0sz = 32;
 
     // Set TCR_EL1
-    TCR_EL1.write(TCR_EL1::TBI0::Used +
+    TCR_EL1.write(
+        TCR_EL1::TBI0::Used +
         TCR_EL1::IPS::Bits_40 + 
         TCR_EL1::TG0::KiB_64 +
         TCR_EL1::SH0::Outer +
