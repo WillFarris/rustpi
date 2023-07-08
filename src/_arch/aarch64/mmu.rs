@@ -1,11 +1,7 @@
 use aarch64_cpu::registers::{TCR_EL1, MAIR_EL1, TTBR0_EL1, SCTLR_EL1};
 use tock_registers::interfaces::{Writeable, ReadWriteable};
-use crate::bsp::memory::virt_mem_layout;
 
 use super::translation_table::TranslationTable;
-
-const NUM_TABLES: usize = 3;
-
 
 pub mod mair {
     pub const DEVICE: u64 = 0;
@@ -15,10 +11,11 @@ pub mod mair {
 #[no_mangle]
 static mut TRANSLATION_TABLE: TranslationTable<3> = TranslationTable::new();
 
+pub fn map_translation_table() {
+    unsafe { TRANSLATION_TABLE.populate_tables() }
+}
 
 pub fn enable_mmu_and_caching() {
-
-    unsafe { TRANSLATION_TABLE.populate_tables() };
 
     MAIR_EL1.write(
         MAIR_EL1::Attr0_Device::nonGathering_nonReordering_noEarlyWriteAck +

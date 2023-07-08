@@ -1,5 +1,5 @@
 use core::arch::global_asm;
-use aarch64_cpu::registers::*;
+use aarch64_cpu::registers::{SCTLR_EL1, HCR_EL2, SCR_EL3, CPACR_EL1, SPSR_EL3};
 use core::cell::UnsafeCell;
 
 use crate::get_core;
@@ -20,6 +20,7 @@ global_asm!(include_str!("cpu/start.s"));
 extern "C" {
     fn irq_init_vectors();
     fn slave_core_sleep();
+    fn memzero(addr: usize, length: usize);
 }
 
 extern "Rust" {
@@ -41,16 +42,9 @@ pub unsafe extern "C" fn _el1_rust_entry() -> ! {
         slave_core_sleep()
     }
 
-    //TODO: Make this not suck
-    let mut bss_index = bss_begin.get() as usize;
-    unsafe {
-        while bss_index  < bss_end.get() as usize {
-            let addr = bss_index as *mut u8;
-            *addr = 0;
-            bss_index += 1;
-        }
-    }
-
+    let bss_start = bss_begin.get() as usize;
+    let bss_length = bss_end.get() as usize - bss_start;
+    memzero(bss_start, bss_length);
     
     crate::kernel_main()
 }

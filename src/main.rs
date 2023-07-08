@@ -22,19 +22,21 @@ use utils::{get_el, get_core};
 use bsp::system_timer;
 
 extern "C" {
-    fn _core_execute(core: u8, f: extern fn());
+    fn core_execute(core: u8, f: extern fn());
 }
 
-extern "C" fn _init_core() {
+extern "C" fn init_core() {
     memory::mmu::enable_mmu_and_caching();
     scheduler::PTABLE.init_core();
-    //bsp::raspberrypi::QA7_REGS.init_core_timer();
+    bsp::raspberrypi::QA7_REGS.init_core_timer();
     exception::irq_enable();
 }
 
 #[no_mangle]
 pub fn kernel_main() -> ! {
     bsp::driver::init();
+
+    crate::memory::mmu::map_translation_table();
 
     crate::memory::mmu::enable_mmu_and_caching();
 
@@ -44,20 +46,21 @@ pub fn kernel_main() -> ! {
 
     scheduler::PTABLE.init_core();
 
-    /*unsafe {
+    unsafe {
         for i in 0..3 {
             core_execute(i+1, init_core);
         }
-    }*/
+    }
 
     tasks::register_cmd("ptable", || {
         scheduler::PTABLE.print();
     });
     
     tasks::register_cmd("test_loop", || {
-        for i in 0..10 {
+        let max = 10;
+        for i in 0..max {
             system_timer().wait_for_ms(1000);
-            println!("loop {}", i+1);
+            println!("loop {}/{}", i+1, max);
         }
     });
 

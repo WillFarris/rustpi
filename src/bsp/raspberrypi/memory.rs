@@ -40,8 +40,7 @@ pub const KERNEL_VIRTUAL_LAYOUT: KernelVirtualLayout<NUM_MEM_RANGES> = KernelVir
                 execute_never: false,
                 permissions: AccessPermissions::ReadOnly,
                 memory_attributes: MemoryAttributes::CacheableDRAM
-            },
-            
+            },  
         },
         TranslationDescription {
             name: "Mapped DRAM (.data, stack, heap)",
