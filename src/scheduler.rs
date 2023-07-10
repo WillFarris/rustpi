@@ -74,17 +74,17 @@ impl CPUContext {
 }
 
 #[derive(Copy, Clone, PartialEq)]
-enum PState {
-    TaskUnused,
-    TaskSleep,
-    TaskRunning,
-    TaskZombie,
+enum TaskState {
+    Unused,
+    Sleeping,
+    Running,
+    Zombie,
 }
 
 #[repr(align(16))]
 struct Process {
     ctx: CPUContext,
-    state: PState,
+    state: TaskState,
     name: &'static str,
     pid: usize,
     next: Option<Box<Process>>,
@@ -94,7 +94,7 @@ impl Process {
     const fn empty() -> Self {
         Self {
             ctx: CPUContext::empty(),
-            state: PState::TaskUnused,
+            state: TaskState::Unused,
             name: "",
             pid: 0,
             next: None
@@ -123,7 +123,7 @@ impl ProcessList<Box<Process>> for Option<Box<Process>> {
     loop {
         match current {
             None => return removed_count,
-            Some(proc) if proc.state == PState::TaskZombie => {
+            Some(proc) if proc.state == TaskState::Zombie => {
                 *current = proc.next.take();
                 removed_count += 1;
             },
@@ -215,7 +215,7 @@ impl PTableInner {
     fn init_core_inner(&mut self, core: u8) {
         let init_proc = Box::new(Process {
             ctx: CPUContext::empty(),
-            state: PState::TaskRunning,
+            state: TaskState::Running,
             name: "kthread",
             pid: self.num_procs + 1,
             next: None,
@@ -227,7 +227,7 @@ impl PTableInner {
     fn new_process_inner(&mut self, name: &'static str, f: fn()) {
         let mut new_proc = Box::new(Process {
             ctx: CPUContext::empty(),
-            state: PState::TaskRunning,
+            state: TaskState::Running,
             name,
             pid: self.num_procs + 1,
             next: None,
@@ -267,12 +267,16 @@ impl PTableInner {
     
     fn exit_current_process(&mut self) {
       if let Some(proc) = &mut self.running[crate::utils::get_core() as usize] {
-        proc.state = PState::TaskZombie;
+        proc.state = TaskState::Zombie;
       }
     }
 
+    fn kill(&mut self, pid: usize) {
+
+    }
+
     fn print(&self) {
-        crate::println!("Process Table ---------------");
+        crate::println!("\nProcess Table ---------------");
         for i in 0..4 {
             if let Some(curproc) = &self.running[i] {
                 let page = &curproc.ctx as *const CPUContext as usize;
@@ -292,7 +296,7 @@ impl PTableInner {
             crate::println!("  pid {}, page 0x{:X}, {}", pid, page, name);
             cur = &curproc.next;
         }
-        crate::println!("-----------------------------");
+        crate::println!("-----------------------------\n");
     }
 }
 
