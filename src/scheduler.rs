@@ -276,7 +276,7 @@ impl PTableInner {
     }
 
     fn print(&self) {
-        crate::println!("\nProcess Table ---------------");
+        crate::println!("\nProcess Table");
         for i in 0..4 {
             if let Some(curproc) = &self.running[i] {
                 let page = &curproc.ctx as *const CPUContext as usize;
@@ -296,7 +296,7 @@ impl PTableInner {
             crate::println!("  pid {}, page 0x{:X}, {}", pid, page, name);
             cur = &curproc.next;
         }
-        crate::println!("-----------------------------\n");
+        crate::println!("\n> ");
     }
 }
 
