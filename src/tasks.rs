@@ -2,11 +2,10 @@ pub mod shell;
 
 use alloc::vec::Vec;
 
-use crate::synchronization::{SpinLock, interface::Mutex};
+use crate::synchronization::{interface::Mutex, SpinLock};
 
 const NUM_CMDS: usize = 10;
 
-//#[link_section = ".locks"]
 static CMD_LIST: CommandList = CommandList::new();
 
 pub fn register_cmd(name: &'static str, entry: fn()) {
@@ -93,9 +92,6 @@ struct Command {
 
 impl Command {
     fn new(name: &'static str, entry: fn()) -> Self {
-        Self {
-            name,
-            entry,
-        }
+        Self { name, entry }
     }
 }

@@ -4,25 +4,25 @@
 #![feature(format_args_nl)]
 #![feature(allocator_api)]
 
-mod utils;
-mod start;
-mod memory;
 mod bsp;
-mod synchronization;
-mod print;
 mod console;
 mod exception;
+mod memory;
+mod print;
 mod scheduler;
+mod start;
+mod synchronization;
 mod tasks;
+mod utils;
 
 extern crate alloc;
 
-use utils::{get_el, get_core};
+use utils::{get_core, get_el};
 
 use bsp::system_timer;
 
 extern "C" {
-    fn core_execute(core: u8, f: extern fn());
+    fn core_execute(core: u8, f: extern "C" fn());
 }
 
 extern "C" fn init_core() {
@@ -48,25 +48,25 @@ pub fn kernel_main() -> ! {
 
     unsafe {
         for i in 0..3 {
-            core_execute(i+1, init_core);
+            core_execute(i + 1, init_core);
         }
     }
 
     tasks::register_cmd("ptable", || {
         scheduler::PTABLE.print();
     });
-    
+
     tasks::register_cmd("test_loop", || {
         let max = 10;
         for i in 0..max {
             system_timer().wait_for_ms(1000);
-            println!("loop {}/{}", i+1, max);
+            println!("loop {}/{}", i + 1, max);
         }
     });
 
     tasks::register_cmd("uptime", || {
-        let raw_time = system_timer().get_ticks();
-        let ms = raw_time / 1000;
+        let ticks = system_timer().get_ticks();
+        let ms = ticks / 1000;
         let s = ms / 1000;
         let m = s / 60;
         let h = m / 60;
@@ -74,18 +74,17 @@ pub fn kernel_main() -> ! {
         crate::println!("uptime: {}d {}h {}m {}s", d, h % 24, m % 60, s % 60);
     });
 
+    println!("{}", bsp::memory::virt_mem_layout().layout_info());
+
     scheduler::PTABLE.new_process("shell", tasks::shell::shell);
-    
+
     loop {
         scheduler::PTABLE.schedule();
     }
 }
 
-
 #[panic_handler]
 pub unsafe fn panic(panic_info: &core::panic::PanicInfo) -> ! {
     println!(" ~ UwU we panic now ~\n{:?}", panic_info);
-    loop {
-
-    }
+    loop {}
 }

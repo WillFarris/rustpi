@@ -1,6 +1,6 @@
 use core::convert;
-use tock_registers::{register_bitfields, registers::InMemoryRegister};
 use tock_registers::interfaces::{Readable, Writeable};
+use tock_registers::{register_bitfields, registers::InMemoryRegister};
 
 use crate::bsp;
 use crate::memory::mmu::{AttributeFields, TranslationGranule};
@@ -79,13 +79,21 @@ register_bitfields! {u64,
     ]
 }
 
-impl convert::From<AttributeFields> for tock_registers::fields::FieldValue<u64, STAGE1_PAGE_DESCRIPTOR::Register> {
+impl convert::From<AttributeFields>
+    for tock_registers::fields::FieldValue<u64, STAGE1_PAGE_DESCRIPTOR::Register>
+{
     fn from(value: AttributeFields) -> Self {
         let mut desc = match value.memory_attributes {
-            crate::memory::mmu::MemoryAttributes::CacheableDRAM => STAGE1_PAGE_DESCRIPTOR::SH::InnerShareable
-                + STAGE1_PAGE_DESCRIPTOR::AttrIndx.val(crate::memory::mmu::arch_mmu::mair::NORMAL_WB_NT_RW),
-            crate::memory::mmu::MemoryAttributes::Device => STAGE1_PAGE_DESCRIPTOR::SH::OuterShareable
-                + STAGE1_PAGE_DESCRIPTOR::AttrIndx.val(crate::memory::mmu::arch_mmu::mair::DEVICE),
+            crate::memory::mmu::MemoryAttributes::CacheableDRAM => {
+                STAGE1_PAGE_DESCRIPTOR::SH::InnerShareable
+                    + STAGE1_PAGE_DESCRIPTOR::AttrIndx
+                        .val(crate::memory::mmu::arch_mmu::mair::NORMAL_WB_NT_RW)
+            }
+            crate::memory::mmu::MemoryAttributes::Device => {
+                STAGE1_PAGE_DESCRIPTOR::SH::OuterShareable
+                    + STAGE1_PAGE_DESCRIPTOR::AttrIndx
+                        .val(crate::memory::mmu::arch_mmu::mair::DEVICE)
+            }
         };
 
         desc += if value.execute_never {
@@ -107,7 +115,7 @@ struct PageDescriptor {
 
 impl PageDescriptor {
     const fn zero() -> Self {
-        Self {value: 0}
+        Self { value: 0 }
     }
 
     pub fn from_output_addr(phys_output_addr: usize, attribute_fields: &AttributeFields) -> Self {
@@ -133,7 +141,7 @@ struct TableDescriptor {
 
 impl TableDescriptor {
     const fn zero() -> Self {
-        Self {value: 0}
+        Self { value: 0 }
     }
 
     fn from_next_level_table_addr(phys_next_lvl_table_addr: usize) -> Self {
@@ -175,23 +183,27 @@ impl<const NUM_TABLES: usize> TranslationTable<NUM_TABLES> {
     }
 
     pub fn populate_tables(&mut self) {
-
         for (level2_num, level2_entry) in self.lower_level2.iter_mut().enumerate() {
-            *level2_entry = TableDescriptor::from_next_level_table_addr(self.lower_level3[level2_num].phys_start_addr_usize());
+            *level2_entry = TableDescriptor::from_next_level_table_addr(
+                self.lower_level3[level2_num].phys_start_addr_usize(),
+            );
 
             for (level3_num, level3_entry) in self.lower_level3[level2_num].iter_mut().enumerate() {
-                let virt_addr = (level2_num << Granule512MiB::SHIFT) + (level3_num << Granule64KiB::SHIFT);
+                let virt_addr =
+                    (level2_num << Granule512MiB::SHIFT) + (level3_num << Granule64KiB::SHIFT);
 
-
-                let (phys_output_addr, attribute_fields) = bsp::memory::virt_mem_layout().virt_addr_properties(virt_addr).unwrap();
-                *level3_entry = PageDescriptor::from_output_addr(phys_output_addr, &attribute_fields);
+                *level3_entry = if let Ok((phys_output_addr, attribute_fields)) =
+                    bsp::memory::virt_mem_layout().virt_addr_properties(virt_addr)
+                {
+                    PageDescriptor::from_output_addr(phys_output_addr, &attribute_fields)
+                } else {
+                    PageDescriptor::zero()
+                };
             }
         }
-        
     }
 
     pub fn phys_base_address(&self) -> u64 {
         &self.lower_level2 as *const [TableDescriptor; NUM_TABLES] as u64
     }
-
 }
