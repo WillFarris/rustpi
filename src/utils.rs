@@ -4,25 +4,20 @@ pub fn spin_for_cycles(n: usize) {
     }
 }
 
-extern "C" {
-    fn get_core_asm() -> u8;
-    fn get_el_asm() -> u8;
-}
-
 pub fn get_core() -> u8 {
-    let mut core: usize = 0;
+    let mut _core: usize = 0;
     unsafe {
-        core::arch::asm!("mrs {}, mpidr_el1", out(reg) core)
+        core::arch::asm!("mrs {}, mpidr_el1", out(reg) _core)
     }
-    (core & 0b11) as u8
+    (_core & 0b11) as u8
 }
 
 pub fn get_el() -> u8 {
-    let mut el: usize = 0;
+    let mut _el: usize = 0;
     unsafe {
-        core::arch::asm!("mrs {}, CurrentEL", out(reg) el)
+        core::arch::asm!("mrs {}, CurrentEL", out(reg) _el)
     }
-    ((el >> 2) & 0b11) as u8
+    ((_el >> 2) & 0b11) as u8
 }
 
 pub fn _sys_timer_sleep_ms(ms: u64) {

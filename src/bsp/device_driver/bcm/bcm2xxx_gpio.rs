@@ -10,8 +10,8 @@ use tock_registers::{
     registers::ReadWrite,
 };
 
+use crate::bsp::device_driver::common::MMIODerefWrapper;
 use crate::utils::spin_for_cycles;
-use super::common::MMIODerefWrapper;
 
 //--------------------------------------------------------------------------------------------------
 // Private Definitions
@@ -111,6 +111,7 @@ register_structs! {
 
 type Registers = MMIODerefWrapper<RegisterBlock>;
 
+#[allow(clippy::upper_case_acronyms)]
 pub struct GPIO {
     registers: Registers,
 }

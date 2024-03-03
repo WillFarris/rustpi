@@ -1,6 +1,6 @@
 BUILDTYPE ?= release
 
-RUST_FLAGS = --target aarch64-unknown-none
+RUST_FLAGS = --target aarch64-unknown-none --features="bsp_rpi3"
 ifeq ($(BUILDTYPE), release)
 RUST_FLAGS += "--release"
 endif

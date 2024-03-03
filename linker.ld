@@ -6,6 +6,7 @@ SECTIONS
      *      Kernel Data                               *
      **************************************************/
     . = __rpi_phys_binary_load_addr;
+    __text_start = .;
     .text : {
         KEEP(*(.text._start))
         *(.text*)
@@ -13,7 +14,12 @@ SECTIONS
 	.rodata : {
         *(.rodata*)
     }
-	.data : { 
+    __text_end = .;
+
+
+    . = ALIGN(65536);
+    __mapped_dram_start = .;
+	.data : {
         *(.data*)
     }
 	bss_begin = .;
@@ -21,9 +27,8 @@ SECTIONS
 		 *(.bss*)
 	}
 	bss_end = .;
-    
+    . = ALIGN(65536);
     .locks : {
-        . = ALIGN(65536);
         LOCKS_START = .;
         *(.locks*)
         LOCKS_END = .;
@@ -84,13 +89,13 @@ SECTIONS
         __EL3_stack_core3 = .;
         __stack_end_core3__ = .;    
     }
-
     .heap (NOLOAD) : {
-        . = ALIGN(65536);
         heap_start = .;
         . = . + 0x1000 * 1024;
         heap_end = .;
     }
+    __mapped_dram_end = .;
+    . = ALIGN(65536);
 
     __kernel_img_end = .;
 

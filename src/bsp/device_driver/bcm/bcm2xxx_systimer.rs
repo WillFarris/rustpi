@@ -4,7 +4,7 @@ use tock_registers::{
     registers::ReadWrite,
 };
 
-use super::common::MMIODerefWrapper;
+use crate::bsp::device_driver::common::MMIODerefWrapper;
 
 register_structs! {
     #[allow(non_snake_case)]

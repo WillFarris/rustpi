@@ -1,4 +1,7 @@
-use crate::bsp::raspberrypi::MINI_UART;
+use crate::synchronization::{FakeLock, interface::Mutex};
+use crate::console::null_console::NULL_CONSOLE;
+
+mod null_console;
 
 pub mod interface {
     use core::fmt;
@@ -10,13 +13,22 @@ pub mod interface {
     }
 
     pub trait Read {
-        fn read_char(&self) -> char;
+        fn read_char(&self) -> char {
+            ' '
+        }
         fn clear_rx(&self);
     }
 
     pub trait ReadWrite: Write + Read {}
 }
 
+static CUR_CONSOLE: FakeLock<&'static (dyn interface::ReadWrite + Sync)> = FakeLock::new(&NULL_CONSOLE);
+
+pub fn register_console(new_console: &'static (dyn interface::ReadWrite + Sync)) {
+    let mut lock = CUR_CONSOLE.lock().unwrap();
+    *lock = new_console;
+}
+
 pub fn console() -> &'static dyn interface::ReadWrite {
-    &MINI_UART
+    *CUR_CONSOLE.lock().unwrap()
 }

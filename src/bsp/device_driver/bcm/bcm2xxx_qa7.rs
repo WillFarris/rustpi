@@ -5,7 +5,7 @@ use tock_registers::{
     interfaces::{Readable, Writeable},
 };
 
-use super::common::MMIODerefWrapper;
+use crate::bsp::device_driver::common::MMIODerefWrapper;
 use crate::synchronization::{interface::Mutex, FakeLock};
 
 register_bitfields! {

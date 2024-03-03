@@ -1,11 +1,12 @@
 {
     "version": "0.2.0",
+    "editor.rulers": [100],
     "configurations": [
         {
             "type": "gdb",
             "request": "attach",
             "name": "Attach to QEMU",
-            "executable": "target/aarch64-unknown-none/debug/kernel",
+            "executable": "target/aarch64-unknown-none/release/kernel",
             "target": "localhost:1234",
             "remote": true,
             "stopAtEntry": false,

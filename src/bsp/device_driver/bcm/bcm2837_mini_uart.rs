@@ -6,7 +6,7 @@ use tock_registers::{
 };
 
 use crate::{console, synchronization::FakeLock};
-use super::common::MMIODerefWrapper;
+use crate::bsp::device_driver::common::MMIODerefWrapper;
 
 register_bitfields! {
     u32,
@@ -160,11 +160,7 @@ impl console::interface::Write for MiniUart {
         let mut busy = true;
         while busy {
             let mut data = self.inner.lock().unwrap();
-            busy = if let Ok(_) = data.write_char(c) {
-                false
-            } else {
-                true
-            }
+            busy = data.write_char(c).is_err();
         }
     }
 
@@ -182,7 +178,7 @@ impl console::interface::Write for MiniUart {
 impl console::interface::Read for MiniUart {
     fn read_char(&self) -> char {
         let mut c = None;
-        while c == None {
+        while c.is_none() {
             let data = self.inner.lock().unwrap();
             c = data.read_char(BlockingMode::Blocking);
         }
