@@ -41,7 +41,7 @@ impl<const NUM_SPECIAL_RANGES: usize> KernelVirtualLayout<{ NUM_SPECIAL_RANGES }
             let size = end - start;
 
             let ds = alloc::format!(
-                "  {:<34} - 0x{:016X} - 0x{:016X}\n    size: {} KiB\n    virt start: 0x{:016X}\n    attributes: {:?}\n    pxn: {}\n    permisssions: {:?}\n",
+                "  {}\n    Physical range: 0x{:016X} - 0x{:016X}\n    Size: {} KiB\n    Virtual start: 0x{:X}\n    Attributes: {:?}\n    PXN: {}\n    Permisssions: {:?}\n",
                 d.name,
                 start,
                 end,
