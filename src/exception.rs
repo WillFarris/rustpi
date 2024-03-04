@@ -2,7 +2,7 @@ use core::arch::global_asm;
 use aarch64_cpu::registers::{CNTFRQ_EL0, CNTP_TVAL_EL0};
 use tock_registers::interfaces::{Writeable, Readable};
 
-use crate::{println, utils::get_core, bsp::raspberrypi::QA7_REGS};
+use crate::{bsp::raspberrypi::QA7_REGS, print, println, utils::get_core};
 
 global_asm!(include_str!("exception.s"));
 
@@ -29,8 +29,18 @@ const EXCEPTION_ERROR_MESSAGES: [&str; 16] = [
 ];
 
 #[no_mangle]
-pub fn show_invalid_entry_message(exception_type: usize, esr_el1: usize, elr_el1: usize) {
-    println!("[core {}] invalid exception: {}, ESR_EL1: {:x}, ELR_EL1: {:x}", get_core(), EXCEPTION_ERROR_MESSAGES[exception_type], esr_el1, elr_el1);
+pub fn show_invalid_entry_message(exception_type: usize, esr_el1: usize, elr_el1: usize, sp: usize) {
+    println!("[core {}] invalid exception: {}, ESR_EL1: {:x}, ELR_EL1: {:x}\n\nRegister dump:", get_core(), EXCEPTION_ERROR_MESSAGES[exception_type], esr_el1, elr_el1);
+    unsafe {
+        let sp = *(sp as *const [u64; 32]);
+        for i in 0..32 {
+            print!("x{:<2}: 0x{:016X}  ", i, sp[i]);
+            if (i+1) % 4 == 0{
+                println!();
+            }
+        }
+    }
+    println!();
     loop {}
 }
 
