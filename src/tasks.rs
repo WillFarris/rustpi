@@ -1,6 +1,5 @@
 pub mod shell;
 
-use alloc::vec::Vec;
 
 use crate::synchronization::{interface::Mutex, SpinLock};
 
@@ -33,10 +32,10 @@ impl CommandList {
         inner.print_cmds();
     }
 
-    fn run_cmd(&self, cmd_with_args: &str) {
+    /* fn run_cmd(&self, cmd_with_args: &str) {
         let inner = self.inner.lock().unwrap();
         inner.run_cmd(cmd_with_args);
-    }
+    } */
 }
 
 struct CommandListInner {
@@ -69,8 +68,8 @@ impl CommandListInner {
         }
     }
 
-    fn run_cmd(&self, cmd_with_args: &str) {
-        let tokens: Vec<&str> = cmd_with_args.split(' ').collect();
+    /* fn run_cmd(&self, cmd_with_args: &str) {
+        let tokens: alloc::vec::Vec<&str> = cmd_with_args.split(' ').collect();
         let cmd_name = tokens[0];
 
         for i in 0..self.next_idx {
@@ -81,7 +80,8 @@ impl CommandListInner {
                 }
             }
         }
-    }
+    } */
+
 }
 
 #[derive(Copy, Clone)]

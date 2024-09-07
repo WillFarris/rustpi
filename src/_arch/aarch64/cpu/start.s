@@ -1,3 +1,8 @@
+.macro ADR_REL register, symbol
+	adrp	\register, \symbol
+	add	\register, \register, #:lo12:\symbol
+.endm
+
 .section .text._start
 
 .globl _start
@@ -6,6 +11,9 @@ _start:
     mrs     x0, s3_1_c15_c2_1
     orr     x0, x0, #0x40
     msr     s3_1_c15_c2_1, x0
+
+    ldr     x0, =100000000
+    msr     cntfrq_el0, x0
 
     mrs     x5, mpidr_el1
     and     x5, x5, #0x3
