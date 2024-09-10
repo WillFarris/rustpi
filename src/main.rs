@@ -16,6 +16,7 @@ mod utils;
 
 use time::time_manager;
 use utils::{get_core, get_el};
+use tock_registers::interfaces::{Readable, Writeable};
 
 #[no_mangle]
 pub fn kernel_main() -> ! {
@@ -25,20 +26,24 @@ pub fn kernel_main() -> ! {
 
     bsp::driver::init();
 
+    println!();
+
     info!("Booting Raspberry Pi 3 in EL{}", get_el());
     info!("Timer resolution: {}ns", time_manager().resolution().as_nanos());
 
-    bsp::raspberrypi::QA7_REGS.init_core_timer();
+    
+    let freq = aarch64_cpu::registers::CNTFRQ_EL0.get();
+    let timer = freq / 10;
+    aarch64_cpu::registers::CNTP_TVAL_EL0.set(timer);
+    aarch64_cpu::registers::CNTP_CTL_EL0.write(aarch64_cpu::registers::CNTP_CTL_EL0::ENABLE::SET);
+
+    bsp::raspberrypi::QA7_REGS.enable_core_timer_irqs();
 
     bsp::memory::virt_mem_layout().print_layout_info();
 
+    exception::irq_enable();
+
     tasks::shell::shell();
 
-    loop {}
-}
-
-#[panic_handler]
-pub unsafe fn panic(panic_info: &core::panic::PanicInfo) -> ! {
-    println!(" ~ UwU we panic now ~\n{:?}", panic_info);
     loop {}
 }

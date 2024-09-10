@@ -28,35 +28,21 @@ _start:
     beq     core3_stack
 
 core0_stack:
-    adr     x1, __EL0_stack_core0
-    adr     x2, __EL1_stack_core0
-    adr     x3, __EL2_stack_core0
-    adr     x4, __EL3_stack_core0
+    adr     x1, __stack_end_core0__
     b       set_stack
 core1_stack:
-    adr     x1, __EL0_stack_core1
-    adr     x2, __EL1_stack_core1
-    adr     x3, __EL2_stack_core1
-    adr     x4, __EL3_stack_core1
+    adr     x1, __stack_end_core1__
     b       set_stack
 core2_stack:
-    adr     x1, __EL0_stack_core2
-    adr     x2, __EL1_stack_core2
-    adr     x3, __EL2_stack_core2
-    adr     x4, __EL3_stack_core2
+    adr     x1, __stack_end_core2__
     b       set_stack
 core3_stack:
-    adr     x1, __EL0_stack_core3
-    adr     x2, __EL1_stack_core3
-    adr     x3, __EL2_stack_core3
-    adr     x4, __EL3_stack_core3
+    adr     x1, __stack_end_core3__
     b       set_stack
 
 set_stack:
-    msr     sp_el0, x1
-    msr     sp_el1, x2
-    msr     sp_el2, x3
-    mov     sp, x4
+    mov     sp, x1
+    msr     sp_el1, x1
 
     adr     x0, SCTLR_INIT_VAL
     ldr     x0, [x0]
@@ -65,14 +51,18 @@ set_stack:
     adr     x0, HCR_INIT_VAL
     ldr     x0, [x0]
     msr     hcr_el2, x0
-    
-    adr     x0, SCR_INIT_VAL
-    ldr     x0, [x0]
-    msr     scr_el3, x0
 
     adr     x0, CPACR_EL1_INIT_VAL
     ldr     x0, [x0]
     msr     cpacr_el1, x0
+
+    adr     x0, CNTHCTL_EL2_INIT_VAL
+    ldr     x0, [x0]
+    msr     cnthctl_el2, x0
+
+    adr     x0, SCR_INIT_VAL
+    ldr     x0, [x0]
+    msr     scr_el3, x0
 
     adr     x0, SPSR_EL3_INIT_VAL
     ldr     x0, [x0]
@@ -87,7 +77,7 @@ set_stack:
 .globl slave_core_sleep
 slave_core_sleep:
     wfe
-	mov	    x2, 204
+	mov	    x2, 0x00CC
 	movk    x2, 0x4000, lsl 16 //0x400000CC
 	mrs     x0, mpidr_el1
 	ubfiz   x0, x0, 4, 4

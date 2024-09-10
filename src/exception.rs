@@ -2,9 +2,15 @@ use core::arch::global_asm;
 use aarch64_cpu::registers::{CNTFRQ_EL0, CNTP_TVAL_EL0};
 use tock_registers::interfaces::{Writeable, Readable};
 
-use crate::{bsp::raspberrypi::QA7_REGS, print, println, utils::get_core};
+use crate::{bsp::raspberrypi::QA7_REGS, info, print, println, utils::get_core};
 
 global_asm!(include_str!("exception.s"));
+
+#[cfg(target_arch = "aarch64")]
+#[path = "_arch/aarch64/exception.rs"]
+mod arch_exception;
+
+pub use arch_exception::*;
 
 const EXCEPTION_ERROR_MESSAGES: [&str; 16] = [
     "SYNC_INVALID_EL1t",
@@ -28,6 +34,7 @@ const EXCEPTION_ERROR_MESSAGES: [&str; 16] = [
     "ERROR_INVALID_EL0_32",
 ];
 
+
 #[no_mangle]
 pub fn show_invalid_entry_message(exception_type: usize, esr_el1: usize, elr_el1: usize, sp: usize) {
     println!("[core {}] invalid exception: {}, ESR_EL1: {:x}, ELR_EL1: {:x}\n\nRegister dump:", get_core(), EXCEPTION_ERROR_MESSAGES[exception_type], esr_el1, elr_el1);
@@ -42,19 +49,6 @@ pub fn show_invalid_entry_message(exception_type: usize, esr_el1: usize, elr_el1
     }
     println!();
     loop {}
-}
-
-#[no_mangle]
-pub unsafe fn handle_irq() {
-    let core = get_core();
-    let core_irq_source = QA7_REGS.get_incoming_irqs(core);
-
-    if core_irq_source & 0b10 != 0 {
-        let freq = CNTFRQ_EL0.get();
-        CNTP_TVAL_EL0.set(freq / 100);
-        //crate::scheduler::PTABLE.schedule();
-    }
-
 }
 
 pub fn irq_enable() {
