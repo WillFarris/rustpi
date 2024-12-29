@@ -1,5 +1,5 @@
 # RustPi
-A Raspberry Pi 3 in Rust on bare metal environment written in Rust! 
+A Raspberry Pi 3 bare metal environment written in Rust! 
 
 ![Example console output](images/example.png)
 
