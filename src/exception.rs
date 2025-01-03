@@ -1,8 +1,6 @@
 use core::arch::global_asm;
-use aarch64_cpu::registers::{CNTFRQ_EL0, CNTP_TVAL_EL0};
-use tock_registers::interfaces::{Writeable, Readable};
 
-use crate::{bsp::raspberrypi::QA7_REGS, info, print, println, utils::get_core};
+use crate::{print, println, utils::get_core};
 
 global_asm!(include_str!("exception.s"));
 
@@ -10,7 +8,6 @@ global_asm!(include_str!("exception.s"));
 #[path = "_arch/aarch64/exception.rs"]
 mod arch_exception;
 
-pub use arch_exception::*;
 
 const EXCEPTION_ERROR_MESSAGES: [&str; 16] = [
     "SYNC_INVALID_EL1t",

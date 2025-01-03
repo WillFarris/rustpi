@@ -33,4 +33,4 @@ qemus: kernel.img
 	qemu-system-aarch64 $(QEMU_FLAGS) -S -kernel target/aarch64-unknown-none/$(BUILDTYPE)/kernel
 
 gdb:
-	$(CMD_PREFIX)gdb -q --eval-command="target remote localhost:1234" --symbols=target/aarch64-unknown-none/$(BUILDTYPE)/kernel
+	RUST_GDB=gdb-multiarch $(CMD_PREFIX)gdb -q --eval-command="target remote localhost:1234" --symbols=target/aarch64-unknown-none/$(BUILDTYPE)/kernel

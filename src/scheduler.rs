@@ -1,7 +1,6 @@
 use crate::{utils::get_core, synchronization::{SpinLock, interface::Mutex}, exception};
 use alloc::boxed::Box;
 
-//#[link_section = ".locks"]
 pub static PTABLE: PTable = PTable::new();
 
 extern "C" {
@@ -81,7 +80,7 @@ enum TaskState {
     Zombie,
 }
 
-#[repr(align(16))]
+#[repr(C, align(16))]
 struct Process {
     ctx: CPUContext,
     state: TaskState,
@@ -155,10 +154,8 @@ impl PTable {
     }
 
     pub fn init_core(&self) {
-        crate::exception::irq_disable();
         let mut table = self.inner.lock().unwrap();
         table.init_core_inner(get_core());
-        crate::exception::irq_enable();
     }
 
     pub fn new_process(&self, name: &'static str, f: fn()) {
@@ -232,7 +229,7 @@ impl PTableInner {
             pid: self.num_procs + 1,
             next: None,
         });
-        let sp = &new_proc.ctx as *const CPUContext as usize + 65536;
+        let sp = &new_proc.ctx as *const CPUContext as usize + 65536 - 32;
         new_proc.ctx.set_entry(f as usize);
         new_proc.ctx.set_pc(ret_from_fork as usize);
         new_proc.ctx.set_sp(sp);
@@ -283,7 +280,7 @@ impl PTableInner {
                 let name = curproc.name;
                 let pid = curproc.pid;
 
-                crate::println!("  [core {}] pid {}, page 0x{:X}, {}", i, pid, page, name);
+                crate::println!("  [core {}] pid {}, page 0x{:X}, sp: 0x{:X}, {}", i, pid, page, curproc.ctx.sp, name);
             }
         }
         crate::println!("\nWaiting to run:");
@@ -293,7 +290,7 @@ impl PTableInner {
             let name = curproc.name;
             let pid = curproc.pid;
 
-            crate::println!("  pid {}, page 0x{:X}, {}", pid, page, name);
+            crate::println!("  pid {}, page 0x{:X}, sp: 0x{:X}, {}", pid, page, curproc.ctx.sp, name);
             cur = &curproc.next;
         }
         crate::println!("\n> ");

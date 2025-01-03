@@ -40,25 +40,25 @@ SECTIONS
     .stack_core0 (NOLOAD) : {
         . = ALIGN(65536);
         __stack_start_core0__ = .;
-        . = . + (2 * 65536);		/* 2 * 64KB kernel stack */
+        . = . + 65536;		        /* 64KB kernel stack */
         __stack_end_core0__ = .;    
     }
 	.stack_core1 (NOLOAD) : {
         . = ALIGN(65536);
         __stack_start_core1__ = .;
-        . = . + (2 * 65536);		/* 2 * 64KB kernel stack */
+        . = . + 65536;		        /* 64KB kernel stack */
         __stack_end_core1__ = .;    
     }
 	.stack_core2 (NOLOAD) : {
         . = ALIGN(65536);
         __stack_start_core2__ = .;
-        . = . + (2 * 65536);		/* 2 * 64KB kernel stack */
+        . = . + 65536;		        /* 64KB kernel stack */
         __stack_end_core2__ = .;    
     }
 	.stack_core3 (NOLOAD) : {
         . = ALIGN(65536);
         __stack_start_core3__ = .;
-        . = . + (2 * 65536);		/* 2 * 64KB kernel stack */
+        . = . + 65536;		        /* 64KB kernel stack */
         __stack_end_core3__ = .;    
     }
 

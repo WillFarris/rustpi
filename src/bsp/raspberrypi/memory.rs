@@ -1,7 +1,7 @@
 use crate::{info, memory::mmu::{
     AccessPermissions, AttributeFields, MemoryAttributes, TranslationDescription,
-}, print, println};
-use core::{cell::UnsafeCell, str::FromStr};
+}};
+use core::cell::UnsafeCell;
 
 use super::{PBASE_END, PBASE_START};
 

@@ -25,7 +25,6 @@ struct KernelAllocatorInner {
 }
 
 #[global_allocator]
-//#[link_section = ".locks"]
 static KERNEL_ALLOCATOR: KernelAllocator = KernelAllocator {
     inner: SpinLock::new(KernelAllocatorInner { map: [0; 1024] })
 };

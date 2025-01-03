@@ -32,10 +32,10 @@ impl CommandList {
         inner.print_cmds();
     }
 
-    /* fn run_cmd(&self, cmd_with_args: &str) {
+    fn run_cmd(&self, cmd_with_args: &str) {
         let inner = self.inner.lock().unwrap();
         inner.run_cmd(cmd_with_args);
-    } */
+    }
 }
 
 struct CommandListInner {
@@ -68,7 +68,7 @@ impl CommandListInner {
         }
     }
 
-    /* fn run_cmd(&self, cmd_with_args: &str) {
+    fn run_cmd(&self, cmd_with_args: &str) {
         let tokens: alloc::vec::Vec<&str> = cmd_with_args.split(' ').collect();
         let cmd_name = tokens[0];
 
@@ -80,7 +80,7 @@ impl CommandListInner {
                 }
             }
         }
-    } */
+    }
 
 }
 

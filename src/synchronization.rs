@@ -1,5 +1,8 @@
 use core::{cell::UnsafeCell, sync::atomic::{AtomicBool, Ordering}};
 
+use aarch64_cpu::registers::DAIF;
+use tock_registers::interfaces::ReadWriteable;
+
 pub mod interface {
     use core::ops::{Deref, DerefMut};
 

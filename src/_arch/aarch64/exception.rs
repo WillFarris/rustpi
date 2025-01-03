@@ -24,10 +24,9 @@ pub unsafe fn handle_irq() {
 
     if core_irq_source & 0b10 != 0 {
         let freq = aarch64_cpu::registers::CNTFRQ_EL0.get();
-        aarch64_cpu::registers::CNTP_TVAL_EL0.set(freq);
+        aarch64_cpu::registers::CNTP_TVAL_EL0.set(freq / 10000);
+        crate::scheduler::PTABLE.schedule();
     }
-
-    info!("IRQ source: {}", core_irq_source);
 }
 
 #[panic_handler]
