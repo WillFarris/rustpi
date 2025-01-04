@@ -1,7 +1,6 @@
 pub mod alloc;
 pub mod mmu;
 
-/*
 use core::{alloc::GlobalAlloc, sync::atomic::{AtomicBool, Ordering}};
 
 use linked_list_allocator::Heap;
@@ -52,4 +51,3 @@ pub fn init_heap() {
     
     INIT_DONE.store(true, Ordering::Relaxed);
 }
-    */

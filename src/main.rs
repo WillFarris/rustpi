@@ -40,7 +40,7 @@ pub fn kernel_main() -> ! {
 
     crate::memory::mmu::map_translation_table();
     crate::memory::mmu::enable_mmu_and_caching();
-    //crate::memory::init_heap();
+    crate::memory::init_heap();
 
     bsp::driver::init();
 
