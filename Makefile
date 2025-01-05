@@ -1,4 +1,4 @@
-BUILDTYPE ?= release
+BUILDTYPE ?= debug
 
 RUST_FLAGS = --target aarch64-unknown-none --features="bsp_rpi3"
 ifeq ($(BUILDTYPE), release)
@@ -9,7 +9,7 @@ endif
 QEMU_FLAGS = -s -M raspi3b -cpu cortex-a53 -serial null -serial stdio -display none
 
 CMD_PREFIX.Darwin.x86_64=aarch64-elf-
-CMD_PREFIX.Linux.x86_64=aarch64-linux-gnu-
+CMD_PREFIX.Linux.x86_64=rust-
 CMD_PREFIX.Linux.aarch64=
 CMD_PREFIX += $(CMD_PREFIX.$(shell uname -s).$(shell uname -m))
 
@@ -33,4 +33,4 @@ qemus: kernel.img
 	qemu-system-aarch64 $(QEMU_FLAGS) -S -kernel target/aarch64-unknown-none/$(BUILDTYPE)/kernel
 
 gdb:
-	$(CMD_PREFIX)gdb -q --eval-command="target remote localhost:1234" --symbols=target/aarch64-unknown-none/$(BUILDTYPE)/kernel
+	RUST_GDB=gdb-multiarch $(CMD_PREFIX)gdb -q --eval-command="target remote localhost:1234" --symbols=target/aarch64-unknown-none/$(BUILDTYPE)/kernel

@@ -1,4 +1,4 @@
-use crate::synchronization::{SpinLock, interface::Mutex};
+use crate::{info, synchronization::{interface::Mutex, SpinLock}};
 
 static DRIVER_MANAGER: DriverManager = DriverManager::new();
 
@@ -54,7 +54,7 @@ impl DriverManager {
     pub fn enumerate(&self) {
         let mut i: usize = 1;
         self.for_each_descriptor(|descriptor| {
-            crate::println!("      {}. {}", i, descriptor.device_driver.compatible());
+            info!("      {}. {}", i, descriptor.device_driver.compatible());
 
             i += 1;
         });

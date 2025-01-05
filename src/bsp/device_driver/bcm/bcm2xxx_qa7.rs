@@ -1,4 +1,3 @@
-use aarch64_cpu::registers::{CNTFRQ_EL0, CNTP_TVAL_EL0, CNTP_CTL_EL0};
 use tock_registers::{
     register_bitfields, register_structs,
     registers::{ReadOnly, ReadWrite, WriteOnly},
@@ -284,9 +283,9 @@ impl QA7Registers {
         }
     }
 
-    pub fn init_core_timer(&self) {
+    pub fn enable_core_timer_irqs(&self) {
         let mut qa7 = self.inner.lock().unwrap();
-        qa7.init_core_timer();
+        qa7.enable_core_timer_irqs();
     }
 
     pub fn get_incoming_irqs(&self, core: u8) -> u32 {
@@ -311,15 +310,8 @@ impl QA7RegistersInner {
         }
     }
 
-    fn init_core_timer(&mut self) {
+    fn enable_core_timer_irqs(&mut self) {
         let core = crate::utils::get_core();
-        let freq = CNTFRQ_EL0.get();
-        let timer = freq;
-
-        CNTP_TVAL_EL0.set(timer);
-        CNTP_CTL_EL0.write(CNTP_CTL_EL0::ENABLE::SET);
-        
-        
         match core {
             0 => {
                 self.registers.Core0TimerInterruptControl.write(

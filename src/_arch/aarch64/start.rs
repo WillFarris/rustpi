@@ -1,5 +1,5 @@
 use core::arch::global_asm;
-use aarch64_cpu::registers::{SCTLR_EL1, HCR_EL2, SCR_EL3, CPACR_EL1, SPSR_EL3};
+use aarch64_cpu::registers::{CNTHCTL_EL2, CPACR_EL1, HCR_EL2, SCR_EL3, SCTLR_EL1, SPSR_EL2, SPSR_EL3};
 use core::cell::UnsafeCell;
 
 use crate::get_core;
@@ -13,7 +13,11 @@ static SCR_INIT_VAL: u64 = SCR_EL3::RW::NextELIsAarch64.value | SCR_EL3::NS::Non
 #[no_mangle]
 static SPSR_EL3_INIT_VAL: u64 = SPSR_EL3::D::Masked.value | SPSR_EL3::A::Masked.value | SPSR_EL3::I::Masked.value | SPSR_EL3::F::Masked.value | SPSR_EL3::M::EL1h.value;
 #[no_mangle]
+static SPSR_EL2_INIT_VAL: u64 = SPSR_EL2::D::Masked.value | SPSR_EL2::A::Masked.value | SPSR_EL2::I::Masked.value | SPSR_EL2::F::Masked.value | SPSR_EL2::M::EL1h.value;
+#[no_mangle]
 static CPACR_EL1_INIT_VAL: u64 = CPACR_EL1::FPEN::TrapNothing.value;
+#[no_mangle]
+static CNTHCTL_EL2_INIT_VAL: u64 = CNTHCTL_EL2::EL1PCTEN::SET.value | CNTHCTL_EL2::EL1PCEN::SET.value;
 
 global_asm!(include_str!("cpu/start.s"));
 

@@ -1,11 +1,8 @@
-use core::fmt::{self, Write};
 use tock_registers::{
-    interfaces::{Readable, Writeable},
     register_bitfields, register_structs,
-    registers::{ReadOnly, ReadWrite},
+    registers::ReadWrite,
 };
 
-use crate::{console, synchronization::FakeLock};
 use crate::bsp::device_driver::common::MMIODerefWrapper;
 
 register_bitfields! {

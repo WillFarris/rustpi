@@ -1,7 +1,7 @@
-use crate::memory::mmu::{
+use crate::{info, memory::mmu::{
     AccessPermissions, AttributeFields, MemoryAttributes, TranslationDescription,
-};
-use core::{cell::UnsafeCell, str::FromStr};
+}};
+use core::cell::UnsafeCell;
 
 use super::{PBASE_END, PBASE_START};
 
@@ -32,29 +32,21 @@ impl<const NUM_SPECIAL_RANGES: usize> KernelVirtualLayout<{ NUM_SPECIAL_RANGES }
         Err("virtual address not mapped")
     }
 
-    pub fn layout_info(&self) -> alloc::string::String {
-        let mut s = alloc::string::String::from_str("Memory layout:\n").unwrap();
-
+    pub fn print_layout_info(&self) {
+        info!("Memory layout:");
         for d in self.translation_descriptions.iter() {
             let start = (d.physical_start)();
             let end = (d.physical_end)();
             let size = end - start;
 
-            let ds = alloc::format!(
-                "  {}\n    Physical range: 0x{:016X} - 0x{:016X}\n    Size: {} KiB\n    Virtual start: 0x{:X}\n    Attributes: {:?}\n    PXN: {}\n    Permisssions: {:?}\n",
-                d.name,
-                start,
-                end,
-                size / 1024,
-                (d.virtual_start)(),
-                d.attributes.memory_attributes,
-                d.attributes.execute_never,
-                d.attributes.permissions,
-            );
-            s.push_str(ds.as_str());
+            info!("  {}", d.name);
+            info!("    Physical range: 0x{:016X} - 0x{:016X}", start, end);
+            info!("    Size: {} KiB", size / 1024);
+            info!("    Virtual start: 0x{:X}", (d.virtual_start)());
+            info!("    Attributes: {:?}", d.attributes.memory_attributes);
+            info!("    PXN: {}", d.attributes.execute_never);
+            info!("    Permisssions: {:?}", d.attributes.permissions);
         }
-
-        s
     }
 }
 

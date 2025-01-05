@@ -24,8 +24,7 @@ struct KernelAllocatorInner {
     map: [u8; NUM_HEAP_PAGES],
 }
 
-#[global_allocator]
-//#[link_section = ".locks"]
+//#[global_allocator]
 static KERNEL_ALLOCATOR: KernelAllocator = KernelAllocator {
     inner: SpinLock::new(KernelAllocatorInner { map: [0; 1024] })
 };
