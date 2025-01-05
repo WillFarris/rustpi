@@ -48,6 +48,46 @@ pub fn kernel_main() -> ! {
 
     info!("Booting Raspberry Pi 3 in EL{}", get_el());
     info!("Timer resolution: {}ns", time_manager().resolution().as_nanos());
+
+    let mailbox_regs = bsp::device_driver::MailboxInterface::new(0x3F00B880);
+
+    unsafe {
+        //let mbox = &mut MAILBOX.0;
+        let mut mbox = alloc::boxed::Box::new([0u32; 7]);
+
+        mbox[0] = 8*4;
+        mbox[1] = 0;
+
+        mbox[2] = 0x00010005;
+        mbox[3] = 8;
+        mbox[4] = 8;
+        mbox[5] = 0;
+        mbox[6] = 0;
+
+        let ptr = mbox.as_ptr();
+
+        core::arch::asm!(
+            "
+            dsb sy
+            dmb sy
+            dc ivac, {addr}
+            ",
+            addr = in(reg) ptr,
+        );
+
+        mailbox_regs.call(8, &*mbox);
+
+        core::arch::asm!(
+            "
+            dsb sy
+            dmb sy
+            dc ivac, {addr}
+            ",
+            addr = in(reg) ptr,
+        );
+
+        info!("DRAM size: {} MiB", mbox[6] / (1024 * 1024));
+    }
     
     let freq = aarch64_cpu::registers::CNTFRQ_EL0.get();
     aarch64_cpu::registers::CNTP_TVAL_EL0.set(freq / 100);
